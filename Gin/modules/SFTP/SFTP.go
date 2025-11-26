@@ -298,13 +298,18 @@ func StartLocalSFTPHandler(c *gin.Context) {
 		return
 	}
 
-	if cfg.Port == 0 {
-		port, err := pickFreePort()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "port-allocation-failed", "details": err.Error()})
-			return
+	if cfg.Port <= 0 {
+		const preferredPort = 9824
+		if !isPortInUse("127.0.0.1", preferredPort) {
+			cfg.Port = preferredPort
+		} else {
+			port, err := pickFreePort()
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "port-allocation-failed", "details": err.Error()})
+				return
+			}
+			cfg.Port = port
 		}
-		cfg.Port = port
 	}
 
 	if isPortInUse("127.0.0.1", cfg.Port) {
