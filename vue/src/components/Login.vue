@@ -844,7 +844,6 @@ export default {
           pass: this.sftpPassword,
         };
 
-        const api = getApiBase();
         const startRes = await fetch(`${api}/sftp/start-local`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
