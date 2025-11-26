@@ -945,6 +945,10 @@ export default {
         setTimeout(() => (this.loginError = ""), 3000);
       }
     },
+    closeLoginPopup() {
+      this.showLoginPopup = false;
+      this.loginError = "";
+    },
     async ensureSftpConnected(username) {
       try {
         const statusRes = await fetch("http://localhost:8080/api/sftp/status", {
