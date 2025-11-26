@@ -32,6 +32,7 @@ import (
 )
 
 func SetDB(d *sql.DB) { db = d }
+func SetDefaultPort(p int) { defaultSFTPPort = p }
 
 type SFTPCreds struct {
 	Host     string `json:"host"`
@@ -56,6 +57,7 @@ var (
 	sftpClients      = make(map[int]*sftp.Client)
 	mu               sync.Mutex
 	sftpMu           sync.Mutex
+	defaultSFTPPort  int
 	sftpCmd          *exec.Cmd
 	sftpCancel       context.CancelFunc
 	sftpLastConfig   *SFTPConfig
@@ -100,9 +102,14 @@ func SftpEnvHandler(c *gin.Context) {
 	rclonePath, err := exec.LookPath("rclone")
 	rcloneInstalled := (err == nil)
 
-	defaultPort := 9824
-	if p, err := pickFreePort(); err == nil {
-		defaultPort = p
+	defaultPort := defaultSFTPPort
+	if defaultPort == 0 {
+		defaultPort = 9824
+	}
+	if isPortInUse("127.0.0.1", defaultPort) {
+		if p, err := pickFreePort(); err == nil {
+			defaultPort = p
+		}
 	}
 
 	var rcloneVersion string
@@ -299,16 +306,19 @@ func StartLocalSFTPHandler(c *gin.Context) {
 	}
 
 	if cfg.Port <= 0 {
-		const preferredPort = 9824
-		if !isPortInUse("127.0.0.1", preferredPort) {
-			cfg.Port = preferredPort
-		} else {
+		preferredPort := defaultSFTPPort
+		if preferredPort == 0 {
+			preferredPort = 9824
+		}
+		if isPortInUse("127.0.0.1", preferredPort) {
 			port, err := pickFreePort()
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "port-allocation-failed", "details": err.Error()})
 				return
 			}
 			cfg.Port = port
+		} else {
+			cfg.Port = preferredPort
 		}
 	}
 
