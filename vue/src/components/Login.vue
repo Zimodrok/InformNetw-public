@@ -673,7 +673,6 @@ export default {
           path: this.libraryPath || `${this.loginForm.username}/library`,
         };
         console.log("submitSftpCreds");
-        const api = getApiBase();
         const res = await fetch(`${api}/sftp/creds`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
