@@ -994,6 +994,17 @@ func main() {
 		c.JSON(200, generalResults)
 	})
 	r.Static("/static", "./static")
+
+	distDir := getEnv("DIST_DIR", "./dist")
+	indexFile := filepath.Join(distDir, "index.html")
+	assetsDir := filepath.Join(distDir, "assets")
+	if _, err := os.Stat(assetsDir); err == nil {
+		r.Static("/assets", assetsDir)
+	}
+	if _, err := os.Stat(filepath.Join(distDir, "vite.svg")); err == nil {
+		r.StaticFile("/vite.svg", filepath.Join(distDir, "vite.svg"))
+	}
+
 	r.POST("/sftp/creds", AuthRequired(), func(c *gin.Context) {
 		user, err := sftpTools.GetCurrentUser(c)
 		if err != nil {
@@ -1989,6 +2000,18 @@ ORDER BY um.uploaded_at DESC
 			"uploaded": uploaded,
 		})
 		uploaded = nil
+	})
+
+	r.NoRoute(func(c *gin.Context) {
+		if c.Request.Method != http.MethodGet {
+			c.JSON(404, gin.H{"error": "not found"})
+			return
+		}
+		if _, err := os.Stat(indexFile); err != nil {
+			c.JSON(500, gin.H{"error": "frontend missing"})
+			return
+		}
+		c.File(indexFile)
 	})
 
 	r.Run(":8080")
