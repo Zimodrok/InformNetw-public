@@ -100,6 +100,11 @@ func SftpEnvHandler(c *gin.Context) {
 	rclonePath, err := exec.LookPath("rclone")
 	rcloneInstalled := (err == nil)
 
+	defaultPort := 9824
+	if p, err := pickFreePort(); err == nil {
+		defaultPort = p
+	}
+
 	var rcloneVersion string
 	if rcloneInstalled {
 		out, verr := exec.Command(rclonePath, "--version").CombinedOutput()
@@ -157,6 +162,7 @@ func SftpEnvHandler(c *gin.Context) {
 		"rclone_path":      rclonePath,
 		"rclone_version":   rcloneVersion,
 		"package_managers": pms,
+		"default_port":     defaultPort,
 	})
 }
 
