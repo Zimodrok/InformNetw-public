@@ -478,6 +478,7 @@
 <script setup lang="js">
 import { ref, nextTick, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { getApiBase } from "../apiBase";
 const isOpen = ref(false);
 import ReleaseModal from "./ReleaseModal.vue";
 
@@ -503,6 +504,7 @@ const checkedTags = ref({ albumCover: true, overwrite: false });
 const matchMethod = ref("auto");
 const selectedDiscogsCoverUrl = ref("");
 import { usePlayer } from "../player/usePlayer";
+const apiBase = getApiBase();
 
 const player = usePlayer();
 function goToLibraryView(view) {
@@ -519,7 +521,7 @@ function toPlayerTrack(song) {
     cover: album.value.album_cover,
     albumId: album.value.album_id,
     notes: album.value.album_comment,
-    streamUrl: `http://localhost:8080/stream/${song.song_id}`,
+    streamUrl: `${apiBase}/stream/${song.song_id}`,
   };
 }
 
@@ -546,12 +548,12 @@ function addAlbumToQueue() {
 const isDiscogsModalOpen = ref(false);
 function playSong(song) {
   if (!audioPlayer.value) return;
-  audioPlayer.value.src = `http://localhost:8080/stream/${song.song_id}`;
+  audioPlayer.value.src = `${apiBase}/stream/${song.song_id}`;
   audioPlayer.value.play();
   currentSong.value = song.title;
 }
 async function downloadAlbum(albumId) {
-  const url = `http://localhost:8080/api/sftp/album/zip?albumId=${albumId}`;
+  const url = `${apiBase}/api/sftp/album/zip?albumId=${albumId}`;
 
   fetch(url, { credentials: "include" })
     .then((res) => res.blob())
@@ -574,7 +576,7 @@ function makeTrackFromSong(song) {
     artist: album.value.album_artist,
     album: album.value.album_name,
     cover: album.value.album_cover,
-    src: `http://localhost:8080/stream/${song.song_id}`,
+    src: `${apiBase}/stream/${song.song_id}`,
   };
 }
 
@@ -768,7 +770,7 @@ async function deleteSong(song) {
   if (!confirm("Delete this song?")) return;
   try {
     const res = await fetch(
-      `http://localhost:8080/song/delete/${song.song_id}`,
+      `${apiBase}/song/delete/${song.song_id}`,
       {
         method: "POST",
         credentials: "include",
@@ -790,7 +792,7 @@ async function deleteAlbum() {
   if (!confirm("Are you sure you want to delete this album?")) return;
   try {
     const res = await fetch(
-      `http://localhost:8080/album/delete/${album.value.album_id}`,
+      `${apiBase}/album/delete/${album.value.album_id}`,
       {
         method: "POST",
         credentials: "include",
@@ -849,7 +851,7 @@ async function saveMetadata() {
   try {
     for (const song of album.value.songs) {
       const res = await fetch(
-        `http://localhost:8080/song/update-metadata/${song.song_id}`,
+        `${apiBase}/song/update-metadata/${song.song_id}`,
         {
           method: "POST",
           credentials: "include",
@@ -917,7 +919,7 @@ const libraryNav = ref([
 onMounted(async () => {
   try {
     const res = await fetch(
-      `http://localhost:8080/api/albums/${route.params.id}`,
+      `${apiBase}/api/albums/${route.params.id}`,
       { credentials: "include" },
     );
     if (!res.ok) throw new Error("Failed to load album");

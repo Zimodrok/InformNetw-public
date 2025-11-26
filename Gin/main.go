@@ -2112,7 +2112,10 @@ ORDER BY um.uploaded_at DESC
 		c.File(indexFile)
 	})
 
-	r.Run(fmt.Sprintf(":%d", portsConfig.APIPort))
+	apiAddr := fmt.Sprintf(":%d", portsConfig.APIPort)
+	log.Printf("API listening at http://localhost:%d", portsConfig.APIPort)
+
+	r.Run(apiAddr)
 }
 
 func startFrontendServer(distDir, indexFile string) {
