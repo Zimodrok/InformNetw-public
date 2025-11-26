@@ -535,6 +535,7 @@
 
 <script>
 import { getApiBase } from "../apiBase";
+const apiBase = getApiBase();
 export default {
   name: "Auth",
   data() {
@@ -673,8 +674,7 @@ export default {
           path: this.libraryPath || `${this.loginForm.username}/library`,
         };
         console.log("submitSftpCreds");
-        const api = getApiBase();
-        const res = await fetch(`${api}/sftp/creds`, {
+        const res = await fetch(`${apiBase}/sftp/creds`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -744,9 +744,10 @@ export default {
 
     async checkUsernameExists(username) {
       try {
-        const api = getApiBase();
         const res = await fetch(
-          `${api}/api/check-username?username=${encodeURIComponent(username)}`,
+          `${apiBase}/api/check-username?username=${encodeURIComponent(
+            username,
+          )}`,
         );
         if (!res.ok) return false;
         const data = await res.json();
@@ -769,8 +770,7 @@ export default {
         const hashed = await this.hashPassword(this.registerForm.password);
         const payload = { ...this.registerForm, password: hashed };
 
-        const api = getApiBase();
-        const res = await fetch(`${api}/api/register`, {
+        const res = await fetch(`${apiBase}/api/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -805,8 +805,7 @@ export default {
       this.error = "";
       this.initServerHighlight = false;
       try {
-        const api = getApiBase();
-        const envRes = await fetch(`${api}/sftp/env`, {
+        const envRes = await fetch(`${apiBase}/sftp/env`, {
           credentials: "include",
         });
         const env = await envRes.json();
@@ -820,7 +819,7 @@ export default {
             return;
           }
 
-          const installRes = await fetch(`${api}/sftp/install-rclone`, {
+          const installRes = await fetch(`${apiBase}/sftp/install-rclone`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -844,7 +843,7 @@ export default {
           pass: this.sftpPassword,
         };
 
-        const startRes = await fetch(`${api}/sftp/start-local`, {
+        const startRes = await fetch(`${apiBase}/sftp/start-local`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -886,8 +885,7 @@ export default {
         const guestHash =
           "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec";
 
-        const api = getApiBase();
-        const res = await fetch(`${api}/login`, {
+        const res = await fetch(`${apiBase}/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -924,8 +922,7 @@ export default {
     async submitLogin() {
       try {
         const hashed = await this.hashPassword(this.loginForm.password);
-        const api = getApiBase();
-        const res = await fetch(`${api}/login`, {
+        const res = await fetch(`${apiBase}/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -953,8 +950,7 @@ export default {
     },
     async ensureSftpConnected(username) {
       try {
-        const api = getApiBase();
-        const statusRes = await fetch(`${api}/api/sftp/status`, {
+        const statusRes = await fetch(`${apiBase}/api/sftp/status`, {
           credentials: "include",
         });
         const status = statusRes.ok ? await statusRes.json() : {};
@@ -1001,8 +997,7 @@ export default {
           };
         }
 
-        const api = getApiBase();
-        const res = await fetch(`${api}/sftp/creds`, {
+        const res = await fetch(`${apiBase}/sftp/creds`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
