@@ -504,7 +504,6 @@ const checkedTags = ref({ albumCover: true, overwrite: false });
 const matchMethod = ref("auto");
 const selectedDiscogsCoverUrl = ref("");
 import { usePlayer } from "../player/usePlayer";
-const apiBase = getApiBase();
 
 const player = usePlayer();
 function goToLibraryView(view) {
@@ -521,7 +520,7 @@ function toPlayerTrack(song) {
     cover: album.value.album_cover,
     albumId: album.value.album_id,
     notes: album.value.album_comment,
-    streamUrl: `${apiBase}/stream/${song.song_id}`,
+    streamUrl: `${getApiBase()}/stream/${song.song_id}`,
   };
 }
 
@@ -548,12 +547,12 @@ function addAlbumToQueue() {
 const isDiscogsModalOpen = ref(false);
 function playSong(song) {
   if (!audioPlayer.value) return;
-  audioPlayer.value.src = `${apiBase}/stream/${song.song_id}`;
+  audioPlayer.value.src = `${getApiBase()}/stream/${song.song_id}`;
   audioPlayer.value.play();
   currentSong.value = song.title;
 }
 async function downloadAlbum(albumId) {
-  const url = `${apiBase}/api/sftp/album/zip?albumId=${albumId}`;
+  const url = `${getApiBase()}/api/sftp/album/zip?albumId=${albumId}`;
 
   fetch(url, { credentials: "include" })
     .then((res) => res.blob())
@@ -576,7 +575,7 @@ function makeTrackFromSong(song) {
     artist: album.value.album_artist,
     album: album.value.album_name,
     cover: album.value.album_cover,
-    src: `${apiBase}/stream/${song.song_id}`,
+    src: `${getApiBase()}/stream/${song.song_id}`,
   };
 }
 
@@ -770,7 +769,7 @@ async function deleteSong(song) {
   if (!confirm("Delete this song?")) return;
   try {
     const res = await fetch(
-      `${apiBase}/song/delete/${song.song_id}`,
+      `${getApiBase()}/song/delete/${song.song_id}`,
       {
         method: "POST",
         credentials: "include",
@@ -792,7 +791,7 @@ async function deleteAlbum() {
   if (!confirm("Are you sure you want to delete this album?")) return;
   try {
     const res = await fetch(
-      `${apiBase}/album/delete/${album.value.album_id}`,
+      `${getApiBase()}/album/delete/${album.value.album_id}`,
       {
         method: "POST",
         credentials: "include",
@@ -851,7 +850,7 @@ async function saveMetadata() {
   try {
     for (const song of album.value.songs) {
       const res = await fetch(
-        `${apiBase}/song/update-metadata/${song.song_id}`,
+        `${getApiBase()}/song/update-metadata/${song.song_id}`,
         {
           method: "POST",
           credentials: "include",
@@ -918,10 +917,10 @@ const libraryNav = ref([
 ]);
 onMounted(async () => {
   try {
-    const res = await fetch(
-      `${apiBase}/api/albums/${route.params.id}`,
-      { credentials: "include" },
-    );
+    const api = getApiBase();
+    const res = await fetch(`${api}/api/albums/${route.params.id}`, {
+      credentials: "include",
+    });
     if (!res.ok) throw new Error("Failed to load album");
     const data = await res.json();
 
