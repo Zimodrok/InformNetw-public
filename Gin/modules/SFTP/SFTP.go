@@ -292,6 +292,15 @@ func StartLocalSFTPHandler(c *gin.Context) {
 		return
 	}
 
+	if cfg.Port == 0 {
+		port, err := pickFreePort()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "port-allocation-failed", "details": err.Error()})
+			return
+		}
+		cfg.Port = port
+	}
+
 	if isPortInUse("127.0.0.1", cfg.Port) {
 		c.JSON(http.StatusConflict, gin.H{
 			"error":   "port-in-use",
@@ -403,6 +412,25 @@ func waitForTCPPort(host string, port int, timeout time.Duration) error {
 		}
 		time.Sleep(200 * time.Millisecond)
 	}
+}
+
+func pickFreePort() (int, error) {
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+
+	_, portStr, err := net.SplitHostPort(l.Addr().String())
+	if err != nil {
+		return 0, err
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return 0, err
+	}
+
+	return port, nil
 }
 func StopLocalSFTPHandler(c *gin.Context) {
 	sftpMu.Lock()
