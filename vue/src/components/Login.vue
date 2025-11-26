@@ -534,6 +534,8 @@
 </template>
 
 <script>
+import { getApiBase } from "../apiBase";
+const apiBase = getApiBase();
 export default {
   name: "Auth",
   data() {
@@ -672,7 +674,7 @@ export default {
           path: this.libraryPath || `${this.loginForm.username}/library`,
         };
         console.log("submitSftpCreds");
-        const res = await fetch("http://localhost:8080/sftp/creds", {
+        const res = await fetch(`${apiBase}/sftp/creds`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -743,7 +745,7 @@ export default {
     async checkUsernameExists(username) {
       try {
         const res = await fetch(
-          `http://localhost:8080/api/check-username?username=${encodeURIComponent(
+          `${apiBase}/api/check-username?username=${encodeURIComponent(
             username,
           )}`,
         );
@@ -768,7 +770,7 @@ export default {
         const hashed = await this.hashPassword(this.registerForm.password);
         const payload = { ...this.registerForm, password: hashed };
 
-        const res = await fetch("http://localhost:8080/api/register", {
+        const res = await fetch(`${apiBase}/api/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -803,7 +805,7 @@ export default {
       this.error = "";
       this.initServerHighlight = false;
       try {
-        const envRes = await fetch("http://localhost:8080/sftp/env", {
+        const envRes = await fetch(`${apiBase}/sftp/env`, {
           credentials: "include",
         });
         const env = await envRes.json();
@@ -817,15 +819,12 @@ export default {
             return;
           }
 
-          const installRes = await fetch(
-            "http://localhost:8080/sftp/install-rclone",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
-              body: JSON.stringify({ package_manager: pm.name }),
-            },
-          );
+          const installRes = await fetch(`${apiBase}/sftp/install-rclone`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ package_manager: pm.name }),
+          });
           const installData = await installRes.json().catch(() => ({}));
           if (!installRes.ok) {
             this.error =
@@ -844,7 +843,7 @@ export default {
           pass: this.sftpPassword,
         };
 
-        const startRes = await fetch("http://localhost:8080/sftp/start-local", {
+        const startRes = await fetch(`${apiBase}/sftp/start-local`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -886,7 +885,7 @@ export default {
         const guestHash =
           "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec";
 
-        const res = await fetch("http://localhost:8080/login", {
+        const res = await fetch(`${apiBase}/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -923,7 +922,7 @@ export default {
     async submitLogin() {
       try {
         const hashed = await this.hashPassword(this.loginForm.password);
-        const res = await fetch("http://localhost:8080/login", {
+        const res = await fetch(`${apiBase}/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -945,9 +944,13 @@ export default {
         setTimeout(() => (this.loginError = ""), 3000);
       }
     },
+    closeLoginPopup() {
+      this.showLoginPopup = false;
+      this.loginError = "";
+    },
     async ensureSftpConnected(username) {
       try {
-        const statusRes = await fetch("http://localhost:8080/api/sftp/status", {
+        const statusRes = await fetch(`${apiBase}/api/sftp/status`, {
           credentials: "include",
         });
         const status = statusRes.ok ? await statusRes.json() : {};
@@ -994,7 +997,7 @@ export default {
           };
         }
 
-        const res = await fetch("http://localhost:8080/sftp/creds", {
+        const res = await fetch(`${apiBase}/sftp/creds`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
