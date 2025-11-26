@@ -32,7 +32,6 @@ import (
 )
 
 func SetDB(d *sql.DB) { db = d }
-func SetDefaultPort(p int) { defaultSFTPPort = p }
 
 type SFTPCreds struct {
 	Host     string `json:"host"`
@@ -57,7 +56,6 @@ var (
 	sftpClients      = make(map[int]*sftp.Client)
 	mu               sync.Mutex
 	sftpMu           sync.Mutex
-	defaultSFTPPort  int
 	sftpCmd          *exec.Cmd
 	sftpCancel       context.CancelFunc
 	sftpLastConfig   *SFTPConfig
@@ -101,16 +99,6 @@ func SftpEnvHandler(c *gin.Context) {
 
 	rclonePath, err := exec.LookPath("rclone")
 	rcloneInstalled := (err == nil)
-
-	defaultPort := defaultSFTPPort
-	if defaultPort == 0 {
-		defaultPort = 9824
-	}
-	if isPortInUse("127.0.0.1", defaultPort) {
-		if p, err := pickFreePort(); err == nil {
-			defaultPort = p
-		}
-	}
 
 	var rcloneVersion string
 	if rcloneInstalled {
@@ -169,7 +157,6 @@ func SftpEnvHandler(c *gin.Context) {
 		"rclone_path":      rclonePath,
 		"rclone_version":   rcloneVersion,
 		"package_managers": pms,
-		"default_port":     defaultPort,
 	})
 }
 
@@ -305,23 +292,6 @@ func StartLocalSFTPHandler(c *gin.Context) {
 		return
 	}
 
-	if cfg.Port <= 0 {
-		preferredPort := defaultSFTPPort
-		if preferredPort == 0 {
-			preferredPort = 9824
-		}
-		if isPortInUse("127.0.0.1", preferredPort) {
-			port, err := pickFreePort()
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "port-allocation-failed", "details": err.Error()})
-				return
-			}
-			cfg.Port = port
-		} else {
-			cfg.Port = preferredPort
-		}
-	}
-
 	if isPortInUse("127.0.0.1", cfg.Port) {
 		c.JSON(http.StatusConflict, gin.H{
 			"error":   "port-in-use",
@@ -433,25 +403,6 @@ func waitForTCPPort(host string, port int, timeout time.Duration) error {
 		}
 		time.Sleep(200 * time.Millisecond)
 	}
-}
-
-func pickFreePort() (int, error) {
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		return 0, err
-	}
-	defer l.Close()
-
-	_, portStr, err := net.SplitHostPort(l.Addr().String())
-	if err != nil {
-		return 0, err
-	}
-	port, err := strconv.Atoi(portStr)
-	if err != nil {
-		return 0, err
-	}
-
-	return port, nil
 }
 func StopLocalSFTPHandler(c *gin.Context) {
 	sftpMu.Lock()

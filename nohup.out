@@ -1,0 +1,5 @@
+2025/09/09 16:38:10 NOTICE: Config file "/Users/zimodro/.config/rclone/rclone.conf" not found - using defaults
+2025/09/09 16:38:10 NOTICE: Loaded 0 authorized keys from "/Users/zimodro/.ssh/authorized_keys"
+2025/09/09 16:38:10 NOTICE: SFTP server listening on [::]:2222
+2025/09/09 16:58:47 ERROR : 02 - PHARMAKON - DAY OF WRATH (1983) - DAY OF WRATH 2.flac: ReadFileHandle.Read error: low level retry 1/10: unexpected EOF
+2025/09/09 16:59:10 ERROR : serve sftp [::1]:53562->[::1]:2222: SSH login failed: [ssh: no auth passed yet, password rejected for "admin"]

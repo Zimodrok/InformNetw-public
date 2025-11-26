@@ -201,7 +201,6 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import { getApiBase } from "../apiBase";
 
 const user = ref({
   server_ip: "",
@@ -210,8 +209,7 @@ const user = ref({
 });
 
 onMounted(async () => {
-  const api = getApiBase();
-  const res = await fetch(`${api}/profile`, {
+  const res = await fetch("http://localhost:8080/profile", {
     credentials: "include",
   });
   if (res.ok) {
@@ -237,8 +235,7 @@ async function updateProfile() {
     library_path: user.value.library_path,
   };
 
-  const api = getApiBase();
-  const res = await fetch(`${api}/profile`, {
+  const res = await fetch("http://localhost:8080/profile", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -250,8 +247,7 @@ async function updateProfile() {
 
 async function logout() {
   const userId = user.value.id;
-  const api = getApiBase();
-  await fetch(`${api}/logout`, {
+  await fetch("http://localhost:8080/logout", {
     method: "POST",
     credentials: "include",
   });

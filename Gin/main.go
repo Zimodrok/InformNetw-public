@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"regexp"
 	"runtime"
 	"sort"
@@ -78,16 +77,6 @@ type PendingAlbum struct {
 	Copyright string `json:"album_copyright"`
 	SongsPA   []Song `json:"songs"`
 }
-
-type PortsConfig struct {
-	APIPort      int    `json:"api_port"`
-	FrontendPort int    `json:"frontend_port"`
-	SFTPPort     int    `json:"sftp_port"`
-	DBURL        string `json:"db_url"`
-}
-
-var portsConfig PortsConfig
-
 type UploadStatus struct {
 	Artist           string `json:"artist"`
 	Title            string `json:"title"`
@@ -335,90 +324,6 @@ func ensureGuestUser() (*sftpTools.User, error) {
 		IsAdmin:  false,
 	}
 	return &sftpTools.CurrentUser, nil
-}
-
-func findPgBin() string {
-	paths := []string{
-		"/opt/homebrew/opt/postgresql@14/bin",
-		"/opt/homebrew/opt/postgresql/bin",
-		"/usr/local/opt/postgresql@14/bin",
-		"/usr/local/opt/postgresql/bin",
-	}
-	for _, dir := range paths {
-		if info, err := os.Stat(dir); err == nil && info.IsDir() {
-			return dir
-		}
-	}
-	return ""
-}
-
-func initLocalDBIfNeeded() {
-	pgBin := findPgBin()
-	if pgBin == "" {
-		log.Printf("postgres binaries not found; skipping auto DB init")
-		return
-	}
-	createuser := filepath.Join(pgBin, "createuser")
-	createdb := filepath.Join(pgBin, "createdb")
-	psql := filepath.Join(pgBin, "psql")
-
-	run := func(cmd string, args ...string) {
-		c := exec.Command(cmd, args...)
-		_ = c.Run()
-	}
-
-	run(createuser, "-s", "musicuser")
-	run(createdb, "-O", "musicuser", "musicdb")
-
-	schemaCandidates := []string{
-		filepath.Join("sql", "schema.sql"),
-	}
-	if exe, err := os.Executable(); err == nil {
-		base := filepath.Dir(exe)
-		schemaCandidates = append(schemaCandidates,
-			filepath.Join(base, "..", "share", "musicapp", "sql", "schema.sql"),
-			filepath.Join(base, "..", "sql", "schema.sql"),
-		)
-	}
-	for _, schemaPath := range schemaCandidates {
-		if _, err := os.Stat(schemaPath); err == nil {
-			run(psql, "-d", "musicdb", "-f", schemaPath)
-			break
-		}
-	}
-}
-
-func tryStartPostgresService() {
-	services := []string{"postgresql@14", "postgresql"}
-	for _, svc := range services {
-		cmd := exec.Command("brew", "services", "start", svc)
-		if err := cmd.Run(); err == nil {
-			log.Printf("attempted to start %s via brew services", svc)
-			return
-		}
-	}
-}
-
-func openDBWithRetry(databaseURL string) (*sql.DB, error) {
-	var lastErr error
-	for i := 0; i < 3; i++ {
-		db, err := sql.Open("postgres", databaseURL)
-		if err != nil {
-			lastErr = err
-			time.Sleep(2 * time.Second)
-			continue
-		}
-		if err = db.Ping(); err != nil {
-			lastErr = err
-			if strings.Contains(err.Error(), "connection refused") && i == 0 {
-				tryStartPostgresService()
-			}
-			time.Sleep(2 * time.Second)
-			continue
-		}
-		return db, nil
-	}
-	return nil, lastErr
 }
 func buildTreeFromPending(pending map[string]*PendingAlbum) []TreeSong {
 	tree := []TreeSong{}
@@ -858,74 +763,6 @@ func mergeResults(strict, fuzzy []map[string]interface{}) []map[string]interface
 	return merged
 }
 
-func pickFreePort() (int, error) {
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		return 0, err
-	}
-	defer l.Close()
-
-	_, portStr, err := net.SplitHostPort(l.Addr().String())
-	if err != nil {
-		return 0, err
-	}
-	port, err := strconv.Atoi(portStr)
-	if err != nil {
-		return 0, err
-	}
-
-	return port, nil
-}
-
-func portsConfigPath() (string, error) {
-	if custom := os.Getenv("MUSICAPP_CONFIG"); custom != "" {
-		return custom, nil
-	}
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(dir, "musicapp", "ports.json"), nil
-}
-
-func loadPortsConfig() (PortsConfig, error) {
-	cfg := PortsConfig{}
-	path, err := portsConfigPath()
-	if err != nil {
-		return cfg, err
-	}
-
-	_ = os.MkdirAll(filepath.Dir(path), 0o755)
-	if data, err := os.ReadFile(path); err == nil {
-		_ = json.Unmarshal(data, &cfg)
-	}
-
-	if cfg.APIPort == 0 {
-		if p, err := pickFreePort(); err == nil {
-			cfg.APIPort = p
-		}
-	}
-	if cfg.FrontendPort == 0 {
-		if p, err := pickFreePort(); err == nil {
-			cfg.FrontendPort = p
-		}
-	}
-	if cfg.SFTPPort == 0 {
-		if p, err := pickFreePort(); err == nil {
-			cfg.SFTPPort = p
-		}
-	}
-	if cfg.DBURL == "" {
-		cfg.DBURL = "postgres://musicuser:musicuser@localhost/musicdb?sslmode=disable"
-	}
-
-	if data, err := json.MarshalIndent(cfg, "", "  "); err == nil {
-		_ = os.WriteFile(path, data, 0o644)
-	}
-
-	return cfg, nil
-}
-
 func getEnv(key, fallback string) string {
 	if val := os.Getenv(key); val != "" {
 		return val
@@ -949,35 +786,17 @@ func isPortInUse(host string, port int) bool {
 func main() {
 	var err error
 	_ = godotenv.Load()
-	portsConfig, err = loadPortsConfig()
-	if err != nil {
-		log.Printf("failed to load ports config, using defaults: %v", err)
-		portsConfig = PortsConfig{}
-	}
-	if portsConfig.APIPort == 0 {
-		portsConfig.APIPort = 8080
-	}
-	if portsConfig.FrontendPort == 0 {
-		portsConfig.FrontendPort = 4173
-	}
-	if portsConfig.SFTPPort == 0 {
-		portsConfig.SFTPPort = 9824
-	}
-
 	consumerKey = os.Getenv("DISCOGS_KEY")
 	consumerSecret = os.Getenv("DISCOGS_SECRET")
-	databaseURL := getEnv("DATABASE_URL", portsConfig.DBURL)
-	if databaseURL == "" || strings.Contains(databaseURL, "musicuser") {
-		initLocalDBIfNeeded()
-	}
-
-	db, err = openDBWithRetry(databaseURL)
+	databaseURL := getEnv("DATABASE_URL", "postgres://musicuser:1122334455@localhost/musicdb?sslmode=disable")
+	db, err = sql.Open("postgres", databaseURL)
+	tagedit.SetDB(db)
+	sftpTools.SetDB(db)
 	if err != nil {
-		log.Printf("Failed to connect to DB: %v", err)
-	} else {
-		tagedit.SetDB(db)
-		sftpTools.SetDB(db)
-		sftpTools.SetDefaultPort(portsConfig.SFTPPort)
+		fmt.Println("Failed to open DB:", err)
+	}
+	if err = db.Ping(); err != nil {
+		fmt.Println("Failed to ping DB:", err)
 	}
 
 	r := gin.Default()
@@ -1002,9 +821,6 @@ func main() {
 			return
 		}
 		c.Next()
-	})
-	r.GET("/config/ports", func(c *gin.Context) {
-		c.JSON(200, portsConfig)
 	})
 	r.GET("/api/sftp/song", AuthRequired(), DownloadSongByID)
 	r.GET("/stream/:songId", AuthRequired(), StreamSong)
@@ -1178,19 +994,6 @@ func main() {
 		c.JSON(200, generalResults)
 	})
 	r.Static("/static", "./static")
-
-	distDir := getEnv("DIST_DIR", "./dist")
-	indexFile := filepath.Join(distDir, "index.html")
-	assetsDir := filepath.Join(distDir, "assets")
-	if _, err := os.Stat(assetsDir); err == nil {
-		r.Static("/assets", assetsDir)
-	}
-	if _, err := os.Stat(filepath.Join(distDir, "vite.svg")); err == nil {
-		r.StaticFile("/vite.svg", filepath.Join(distDir, "vite.svg"))
-	}
-
-	go startFrontendServer(distDir, indexFile)
-
 	r.POST("/sftp/creds", AuthRequired(), func(c *gin.Context) {
 		user, err := sftpTools.GetCurrentUser(c)
 		if err != nil {
@@ -1215,8 +1018,6 @@ func main() {
 			c.JSON(400, gin.H{"error": "missing-fields"})
 			return
 		}
-
-		log.Printf("[sftp/creds] user=%d host=%s port=%d username=%s path=%s", user.ID, creds.Host, creds.Port, creds.Username, creds.Path)
 
 		addr := fmt.Sprintf("%s:%d", creds.Host, creds.Port)
 		config := &ssh.ClientConfig{
@@ -1278,7 +1079,6 @@ func main() {
 		c.JSON(200, gin.H{
 			"connected": true,
 			"status":    "ok",
-			"path":      creds.Path,
 		})
 	})
 
@@ -1336,11 +1136,7 @@ func main() {
 			form.Username, form.Email,
 		).Scan(&exists)
 		if err != nil {
-			log.Printf("[register] exists check failed for %s: %v", form.Username, err)
-			c.JSON(500, gin.H{
-				"error":   "Database error",
-				"details": err.Error(),
-			})
+			c.JSON(500, gin.H{"error": "Database error"})
 			return
 		}
 		if exists {
@@ -1356,11 +1152,7 @@ func main() {
         RETURNING uid
     `, form.Username, hashed, form.FirstName, form.LastName, form.Email, form.LibraryPath, defaultServerIP).Scan(&userID)
 		if err != nil {
-			log.Printf("[register] create user failed username=%s email=%s: %v", form.Username, form.Email, err)
-			c.JSON(500, gin.H{
-				"error":   "Failed to create user",
-				"details": err.Error(),
-			})
+			c.JSON(500, gin.H{"error": "Failed to create user"})
 			return
 		}
 
@@ -2159,14 +1951,10 @@ ORDER BY um.uploaded_at DESC
 					continue
 				}
 
-				tempDir := filepath.Join(os.TempDir(), "musicapp_uploads")
-				if err := os.MkdirAll(tempDir, 0755); err != nil {
-					fmt.Printf("❌ Failed to create temp dir %s: %v\n", tempDir, err)
-					continue
-				}
+				os.MkdirAll("./temp_uploads", 0755)
 
-				localTempPath := filepath.Join(tempDir, fmt.Sprintf("u%d_%s", user.ID, filepath.Base(s.FileName)))
-				if err := os.WriteFile(localTempPath, s.Data, 0600); err != nil {
+				localTempPath := fmt.Sprintf("./temp_uploads/u%d_%s", user.ID, s.FileName)
+				if err := os.WriteFile(localTempPath, s.Data, 0644); err != nil {
 					fmt.Printf("❌ Failed to save temp file for SFTP %s: %v\n", s.FileName, err)
 				} else {
 					fmt.Printf("[sftp] UploadToUserSFTP start user=%d local=%s filename=%s\n",
@@ -2203,45 +1991,5 @@ ORDER BY um.uploaded_at DESC
 		uploaded = nil
 	})
 
-	r.NoRoute(func(c *gin.Context) {
-		if c.Request.Method != http.MethodGet {
-			c.JSON(404, gin.H{"error": "not found"})
-			return
-		}
-		if _, err := os.Stat(indexFile); err != nil {
-			c.JSON(500, gin.H{"error": "frontend missing"})
-			return
-		}
-		c.File(indexFile)
-	})
-
-	apiAddr := fmt.Sprintf(":%d", portsConfig.APIPort)
-	log.Printf("API listening at http://localhost:%d", portsConfig.APIPort)
-
-	r.Run(apiAddr)
-}
-
-func startFrontendServer(distDir, indexFile string) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/config/ports", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(portsConfig)
-	})
-
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		requestPath := r.URL.Path
-		clean := filepath.Clean(requestPath)
-		target := filepath.Join(distDir, clean)
-		if info, err := os.Stat(target); err == nil && !info.IsDir() {
-			http.ServeFile(w, r, target)
-			return
-		}
-		http.ServeFile(w, r, indexFile)
-	})
-
-	addr := fmt.Sprintf(":%d", portsConfig.FrontendPort)
-	log.Printf("Serving frontend on %s", addr)
-	if err := http.ListenAndServe(addr, mux); err != nil && err != http.ErrServerClosed {
-		log.Printf("frontend server error: %v", err)
-	}
+	r.Run(":8080")
 }

@@ -777,7 +777,7 @@
     </div>
     <div
       class="fixed bottom-4 right-4 z-50 w-14 h-14 flex items-center justify-center bg-stone-800 rounded-full shadow-lg hover:bg-stone-700 transition-colors cursor-help"
-      @click="triggerFilePicker(userId)"
+      @click="showGuide(userId)"
     >
       <div class="relative w-7 h-7">
         <div
@@ -794,7 +794,6 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import Fuse from "fuse.js";
-import { getApiBase } from "../apiBase";
 const router = useRouter();
 const route = useRoute();
 const username = ref("");
@@ -813,7 +812,6 @@ const UploadGuide = ref(false);
 const uploadingSongs = ref([]);
 const selectedArtist = ref(null);
 const uploadTree = ref("");
-const fileInput = ref(null);
 let progressInterval = null;
 
 const libraryNav = ref([
@@ -846,8 +844,7 @@ const libraryNav = ref([
 
 const fetchAlbums = async () => {
   try {
-    const api = getApiBase();
-    const res = await fetch(`${api}/library`, {
+    const res = await fetch("http://localhost:8080/library", {
       method: "GET",
       credentials: "include",
     });
@@ -941,13 +938,6 @@ function hideUploadGuide(userId) {
   localStorage.setItem(key, "true");
 }
 
-function triggerFilePicker(userId) {
-  hideUploadGuide(userId);
-  if (fileInput.value) {
-    fileInput.value.click();
-  }
-}
-
 function sortBy(key) {
   if (sortKey.value === key) {
     sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
@@ -1024,8 +1014,7 @@ const groupedArtists = computed(() => {
 
 const fetchUploadStatus = async () => {
   try {
-    const api = getApiBase();
-    const res = await fetch(`${api}/upload/status`, {
+    const res = await fetch("http://localhost:8080/upload/status", {
       method: "GET",
       credentials: "include",
     });
@@ -1149,8 +1138,7 @@ const handleDrop = async (e) => {
   files.forEach((f) => formData.append("files[]", f));
 
   startProgressPolling();
-  const api = getApiBase();
-  await fetch(`${api}/upload`, {
+  await fetch("http://localhost:8080/upload", {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1292,8 +1280,7 @@ onMounted(async () => {
   });
   await fetchAlbums();
   const all = [];
-  const api = getApiBase();
-  const res = await fetch(`${api}/profile`, {
+  const res = await fetch("http://localhost:8080/profile", {
     credentials: "include",
   });
   if (res.ok) {
