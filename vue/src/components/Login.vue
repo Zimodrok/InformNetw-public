@@ -534,13 +534,10 @@
 </template>
 
 <script>
-import { getApiBase, getPortsConfig } from "../apiBase";
-const api = getApiBase();
+import { getApiBase } from "../apiBase";
 export default {
   name: "Auth",
   data() {
-    const cfg = getPortsConfig() || {};
-    const defaultPort = cfg.sftp_port || 9824;
     return {
       showRegisterForm: true,
       showLoginPopup: false,
@@ -554,8 +551,7 @@ export default {
       initServerLoading: false,
       initServerError: "",
       sftpExists: false,
-      defaultSftpPort: defaultPort,
-      hostInput: `localhost:${defaultPort}`,
+      hostInput: "",
       sftpUser: "FlacPlayerUser",
       sftpPassword: "",
       localSftpFolder: "",
@@ -677,7 +673,7 @@ export default {
           path: this.libraryPath || `${this.loginForm.username}/library`,
         };
         console.log("submitSftpCreds");
-        const res = await fetch(`${api}/sftp/creds`, {
+        const res = await fetch("http://localhost:8080/sftp/creds", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -839,7 +835,7 @@ export default {
           }
         }
 
-        const localPort = this.defaultSftpPort || 2222;
+        const localPort = 2222;
         const startBody = {
           folder_name: this.localSftpFolderName,
           port: localPort,
@@ -950,10 +946,6 @@ export default {
         setTimeout(() => (this.loginError = ""), 3000);
       }
     },
-    closeLoginPopup() {
-      this.showLoginPopup = false;
-      this.loginError = "";
-    },
     async ensureSftpConnected(username) {
       try {
         const api = getApiBase();
@@ -967,7 +959,7 @@ export default {
         if (status.status === "missing") {
           this.sftpUser = username;
           this.libraryPath = `${username}/library`;
-          this.hostInput = `localhost:${this.defaultSftpPort || 22}`;
+          this.hostInput = "localhost:2222";
           this.sftpExists = false;
           this.sftpModalShown = true;
 
@@ -1004,7 +996,7 @@ export default {
           };
         }
 
-        const res = await fetch(`${api}/sftp/creds`, {
+        const res = await fetch("http://localhost:8080/sftp/creds", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
