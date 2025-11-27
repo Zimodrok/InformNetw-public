@@ -2072,10 +2072,14 @@ ORDER BY um.uploaded_at DESC
 					continue
 				}
 
-				os.MkdirAll("./temp_uploads", 0755)
+				tempDir := filepath.Join(os.TempDir(), "musicapp_uploads")
+				if err := os.MkdirAll(tempDir, 0755); err != nil {
+					fmt.Printf("❌ Failed to create temp dir %s: %v\n", tempDir, err)
+					continue
+				}
 
-				localTempPath := fmt.Sprintf("./temp_uploads/u%d_%s", user.ID, s.FileName)
-				if err := os.WriteFile(localTempPath, s.Data, 0644); err != nil {
+				localTempPath := filepath.Join(tempDir, fmt.Sprintf("u%d_%s", user.ID, filepath.Base(s.FileName)))
+				if err := os.WriteFile(localTempPath, s.Data, 0600); err != nil {
 					fmt.Printf("❌ Failed to save temp file for SFTP %s: %v\n", s.FileName, err)
 				} else {
 					fmt.Printf("[sftp] UploadToUserSFTP start user=%d local=%s filename=%s\n",
