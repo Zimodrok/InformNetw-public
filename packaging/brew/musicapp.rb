@@ -7,6 +7,7 @@ class Musicapp < Formula
 
   depends_on "go" => :build
   depends_on "node" => :build
+  depends_on "pkg-config" => :build
   depends_on "taglib"
   depends_on "postgresql"
   depends_on "rclone"
