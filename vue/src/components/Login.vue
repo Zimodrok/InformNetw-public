@@ -534,10 +534,12 @@
 </template>
 
 <script>
-import { getApiBase } from "../apiBase";
+import { getApiBase, getPortsConfig } from "../apiBase";
 export default {
   name: "Auth",
   data() {
+    const cfg = getPortsConfig() || {};
+    const defaultPort = cfg.sftp_port || 9824;
     return {
       showRegisterForm: true,
       showLoginPopup: false,
@@ -551,7 +553,8 @@ export default {
       initServerLoading: false,
       initServerError: "",
       sftpExists: false,
-      hostInput: "",
+      defaultSftpPort: defaultPort,
+      hostInput: `localhost:${defaultPort}`,
       sftpUser: "FlacPlayerUser",
       sftpPassword: "",
       localSftpFolder: "",
@@ -835,7 +838,7 @@ export default {
           }
         }
 
-        const localPort = 2222;
+        const localPort = this.defaultSftpPort || 2222;
         const startBody = {
           folder_name: this.localSftpFolderName,
           port: localPort,
@@ -963,7 +966,7 @@ export default {
         if (status.status === "missing") {
           this.sftpUser = username;
           this.libraryPath = `${username}/library`;
-          this.hostInput = "localhost:2222";
+          this.hostInput = `localhost:${this.defaultSftpPort || 22}`;
           this.sftpExists = false;
           this.sftpModalShown = true;
 
