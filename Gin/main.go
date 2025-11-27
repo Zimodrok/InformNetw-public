@@ -370,9 +370,21 @@ func initLocalDBIfNeeded() {
 	run(createuser, "-s", "musicuser")
 	run(createdb, "-O", "musicuser", "musicdb")
 
-	schemaPath := filepath.Join("sql", "schema.sql")
-	if _, err := os.Stat(schemaPath); err == nil {
-		run(psql, "-d", "musicdb", "-f", schemaPath)
+	schemaCandidates := []string{
+		filepath.Join("sql", "schema.sql"),
+	}
+	if exe, err := os.Executable(); err == nil {
+		base := filepath.Dir(exe)
+		schemaCandidates = append(schemaCandidates,
+			filepath.Join(base, "..", "share", "musicapp", "sql", "schema.sql"),
+			filepath.Join(base, "..", "sql", "schema.sql"),
+		)
+	}
+	for _, schemaPath := range schemaCandidates {
+		if _, err := os.Stat(schemaPath); err == nil {
+			run(psql, "-d", "musicdb", "-f", schemaPath)
+			break
+		}
 	}
 }
 
@@ -904,7 +916,7 @@ func loadPortsConfig() (PortsConfig, error) {
 		}
 	}
 	if cfg.DBURL == "" {
-		cfg.DBURL = "postgres://musicuser:1122334455@localhost/musicdb?sslmode=disable"
+		cfg.DBURL = "postgres://musicuser:musicuser@localhost/musicdb?sslmode=disable"
 	}
 
 	if data, err := json.MarshalIndent(cfg, "", "  "); err == nil {
