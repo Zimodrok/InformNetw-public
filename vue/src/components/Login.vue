@@ -536,6 +536,8 @@
 <script>
 import { getApiBase } from "../apiBase";
 const apiBase = getApiBase();
+// Alias for older/minified builds that still reference `api`
+const api = apiBase;
 export default {
   name: "Auth",
   data() {
