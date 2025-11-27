@@ -1263,6 +1263,7 @@ func main() {
     `, form.Username, hashed, form.FirstName, form.LastName, form.Email, form.LibraryPath, defaultServerIP).Scan(&userID)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "Failed to create user"})
+			//TODO: add more detailed errors to debug
 			return
 		}
 
@@ -1299,11 +1300,7 @@ func main() {
 
 			guestUser, err := ensureGuestUser()
 			if err != nil {
-				log.Printf("[login/guest] init guest failed: %v", err)
-				c.JSON(500, gin.H{
-					"error":   "Failed to initialize guest",
-					"details": err.Error(),
-				})
+				c.JSON(500, gin.H{"error": "Failed to initialize guest"})
 				return
 			}
 			sessionID := generateRandomSessionID()

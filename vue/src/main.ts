@@ -4,7 +4,7 @@ import { router } from './router'
 import './style.css'
 
 async function bootstrap() {
-  let apiBase = 'http://localhost:8080'
+  let apiBase = ''
   let cfg: any = null
   try {
     const res = await fetch('/config/ports', { credentials: 'include' })
@@ -20,7 +20,7 @@ async function bootstrap() {
     console.warn('ports config fetch failed, using defaults', e)
   }
 
-  ;(window as any).__MUSICAPP_API_BASE = apiBase
+  ;(window as any).__MUSICAPP_API_BASE = apiBase || undefined
   ;(window as any).__MUSICAPP_CONFIG = cfg
 
   createApp(App).use(router).mount('#app')
