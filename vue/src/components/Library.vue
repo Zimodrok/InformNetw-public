@@ -797,7 +797,6 @@ import Fuse from "fuse.js";
 import { getApiBase } from "../apiBase";
 const router = useRouter();
 const route = useRoute();
-const apiBase = getApiBase();
 const username = ref("");
 const albums = ref([]);
 const sortKey = ref("title");
@@ -846,7 +845,8 @@ const libraryNav = ref([
 
 const fetchAlbums = async () => {
   try {
-    const res = await fetch(`${apiBase}/library`, {
+    const api = getApiBase();
+    const res = await fetch(`${api}/library`, {
       method: "GET",
       credentials: "include",
     });
@@ -1016,7 +1016,8 @@ const groupedArtists = computed(() => {
 
 const fetchUploadStatus = async () => {
   try {
-    const res = await fetch(`${apiBase}/upload/status`, {
+    const api = getApiBase();
+    const res = await fetch(`${api}/upload/status`, {
       method: "GET",
       credentials: "include",
     });
@@ -1140,7 +1141,8 @@ const handleDrop = async (e) => {
   files.forEach((f) => formData.append("files[]", f));
 
   startProgressPolling();
-  await fetch(`${apiBase}/upload`, {
+  const api = getApiBase();
+  await fetch(`${api}/upload`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1282,7 +1284,8 @@ onMounted(async () => {
   });
   await fetchAlbums();
   const all = [];
-  const res = await fetch(`${apiBase}/profile`, {
+  const api = getApiBase();
+  const res = await fetch(`${api}/profile`, {
     credentials: "include",
   });
   if (res.ok) {

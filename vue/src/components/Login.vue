@@ -534,13 +534,13 @@
 </template>
 
 <script>
-import { getApiBase } from "../apiBase";
-const apiBase = getApiBase();
-// Alias for older/minified builds that still reference `api`
-const api = apiBase;
+import { getApiBase, getPortsConfig } from "../apiBase";
+const api = getApiBase();
 export default {
   name: "Auth",
   data() {
+    const cfg = getPortsConfig() || {};
+    const defaultPort = cfg.sftp_port || 9824;
     return {
       showRegisterForm: true,
       showLoginPopup: false,
@@ -554,7 +554,8 @@ export default {
       initServerLoading: false,
       initServerError: "",
       sftpExists: false,
-      hostInput: "",
+      defaultSftpPort: defaultPort,
+      hostInput: `localhost:${defaultPort}`,
       sftpUser: "FlacPlayerUser",
       sftpPassword: "",
       localSftpFolder: "",
@@ -676,7 +677,7 @@ export default {
           path: this.libraryPath || `${this.loginForm.username}/library`,
         };
         console.log("submitSftpCreds");
-        const res = await fetch(`${apiBase}/sftp/creds`, {
+        const res = await fetch(`${api}/sftp/creds`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -746,10 +747,9 @@ export default {
 
     async checkUsernameExists(username) {
       try {
+        const api = getApiBase();
         const res = await fetch(
-          `${apiBase}/api/check-username?username=${encodeURIComponent(
-            username,
-          )}`,
+          `${api}/api/check-username?username=${encodeURIComponent(username)}`,
         );
         if (!res.ok) return false;
         const data = await res.json();
@@ -772,7 +772,8 @@ export default {
         const hashed = await this.hashPassword(this.registerForm.password);
         const payload = { ...this.registerForm, password: hashed };
 
-        const res = await fetch(`${apiBase}/api/register`, {
+        const api = getApiBase();
+        const res = await fetch(`${api}/api/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -807,7 +808,8 @@ export default {
       this.error = "";
       this.initServerHighlight = false;
       try {
-        const envRes = await fetch(`${apiBase}/sftp/env`, {
+        const api = getApiBase();
+        const envRes = await fetch(`${api}/sftp/env`, {
           credentials: "include",
         });
         const env = await envRes.json();
@@ -821,7 +823,7 @@ export default {
             return;
           }
 
-          const installRes = await fetch(`${apiBase}/sftp/install-rclone`, {
+          const installRes = await fetch(`${api}/sftp/install-rclone`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -837,7 +839,7 @@ export default {
           }
         }
 
-        const localPort = 2222;
+        const localPort = this.defaultSftpPort || 2222;
         const startBody = {
           folder_name: this.localSftpFolderName,
           port: localPort,
@@ -845,7 +847,7 @@ export default {
           pass: this.sftpPassword,
         };
 
-        const startRes = await fetch(`${apiBase}/sftp/start-local`, {
+        const startRes = await fetch(`${api}/sftp/start-local`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -887,7 +889,8 @@ export default {
         const guestHash =
           "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec";
 
-        const res = await fetch(`${apiBase}/login`, {
+        const api = getApiBase();
+        const res = await fetch(`${api}/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -924,7 +927,8 @@ export default {
     async submitLogin() {
       try {
         const hashed = await this.hashPassword(this.loginForm.password);
-        const res = await fetch(`${apiBase}/login`, {
+        const api = getApiBase();
+        const res = await fetch(`${api}/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -952,7 +956,8 @@ export default {
     },
     async ensureSftpConnected(username) {
       try {
-        const statusRes = await fetch(`${apiBase}/api/sftp/status`, {
+        const api = getApiBase();
+        const statusRes = await fetch(`${api}/api/sftp/status`, {
           credentials: "include",
         });
         const status = statusRes.ok ? await statusRes.json() : {};
@@ -962,7 +967,7 @@ export default {
         if (status.status === "missing") {
           this.sftpUser = username;
           this.libraryPath = `${username}/library`;
-          this.hostInput = "localhost:2222";
+          this.hostInput = `localhost:${this.defaultSftpPort || 22}`;
           this.sftpExists = false;
           this.sftpModalShown = true;
 
@@ -999,7 +1004,7 @@ export default {
           };
         }
 
-        const res = await fetch(`${apiBase}/sftp/creds`, {
+        const res = await fetch(`${api}/sftp/creds`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",

@@ -5,5 +5,5 @@
 </template>
 
 <script setup>
-  import GlobalPlayerBar from "./components/GlobalPlayerBar.vue";
+import GlobalPlayerBar from "./components/GlobalPlayerBar.vue";
 </script>

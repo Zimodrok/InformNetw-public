@@ -77,6 +77,16 @@ type PendingAlbum struct {
 	Copyright string `json:"album_copyright"`
 	SongsPA   []Song `json:"songs"`
 }
+
+type PortsConfig struct {
+	APIPort      int    `json:"api_port"`
+	FrontendPort int    `json:"frontend_port"`
+	SFTPPort     int    `json:"sftp_port"`
+	DBURL        string `json:"db_url"`
+}
+
+var portsConfig PortsConfig
+
 type UploadStatus struct {
 	Artist           string `json:"artist"`
 	Title            string `json:"title"`
@@ -763,6 +773,74 @@ func mergeResults(strict, fuzzy []map[string]interface{}) []map[string]interface
 	return merged
 }
 
+func pickFreePort() (int, error) {
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+
+	_, portStr, err := net.SplitHostPort(l.Addr().String())
+	if err != nil {
+		return 0, err
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return 0, err
+	}
+
+	return port, nil
+}
+
+func portsConfigPath() (string, error) {
+	if custom := os.Getenv("MUSICAPP_CONFIG"); custom != "" {
+		return custom, nil
+	}
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "musicapp", "ports.json"), nil
+}
+
+func loadPortsConfig() (PortsConfig, error) {
+	cfg := PortsConfig{}
+	path, err := portsConfigPath()
+	if err != nil {
+		return cfg, err
+	}
+
+	_ = os.MkdirAll(filepath.Dir(path), 0o755)
+	if data, err := os.ReadFile(path); err == nil {
+		_ = json.Unmarshal(data, &cfg)
+	}
+
+	if cfg.APIPort == 0 {
+		if p, err := pickFreePort(); err == nil {
+			cfg.APIPort = p
+		}
+	}
+	if cfg.FrontendPort == 0 {
+		if p, err := pickFreePort(); err == nil {
+			cfg.FrontendPort = p
+		}
+	}
+	if cfg.SFTPPort == 0 {
+		if p, err := pickFreePort(); err == nil {
+			cfg.SFTPPort = p
+		}
+	}
+	if cfg.DBURL == "" {
+		cfg.DBURL = "postgres://musicuser:1122334455@localhost/musicdb?sslmode=disable"
+	}
+
+	if data, err := json.MarshalIndent(cfg, "", "  "); err == nil {
+		_ = os.WriteFile(path, data, 0o644)
+	}
+
+	return cfg, nil
+}
+
 func getEnv(key, fallback string) string {
 	if val := os.Getenv(key); val != "" {
 		return val
@@ -786,12 +864,28 @@ func isPortInUse(host string, port int) bool {
 func main() {
 	var err error
 	_ = godotenv.Load()
+	portsConfig, err = loadPortsConfig()
+	if err != nil {
+		log.Printf("failed to load ports config, using defaults: %v", err)
+		portsConfig = PortsConfig{}
+	}
+	if portsConfig.APIPort == 0 {
+		portsConfig.APIPort = 8080
+	}
+	if portsConfig.FrontendPort == 0 {
+		portsConfig.FrontendPort = 4173
+	}
+	if portsConfig.SFTPPort == 0 {
+		portsConfig.SFTPPort = 9824
+	}
+
 	consumerKey = os.Getenv("DISCOGS_KEY")
 	consumerSecret = os.Getenv("DISCOGS_SECRET")
-	databaseURL := getEnv("DATABASE_URL", "postgres://musicuser:1122334455@localhost/musicdb?sslmode=disable")
+	databaseURL := getEnv("DATABASE_URL", portsConfig.DBURL)
 	db, err = sql.Open("postgres", databaseURL)
 	tagedit.SetDB(db)
 	sftpTools.SetDB(db)
+	sftpTools.SetDefaultPort(portsConfig.SFTPPort)
 	if err != nil {
 		fmt.Println("Failed to open DB:", err)
 	}
@@ -821,6 +915,9 @@ func main() {
 			return
 		}
 		c.Next()
+	})
+	r.GET("/config/ports", func(c *gin.Context) {
+		c.JSON(200, portsConfig)
 	})
 	r.GET("/api/sftp/song", AuthRequired(), DownloadSongByID)
 	r.GET("/stream/:songId", AuthRequired(), StreamSong)
@@ -994,6 +1091,19 @@ func main() {
 		c.JSON(200, generalResults)
 	})
 	r.Static("/static", "./static")
+
+	distDir := getEnv("DIST_DIR", "./dist")
+	indexFile := filepath.Join(distDir, "index.html")
+	assetsDir := filepath.Join(distDir, "assets")
+	if _, err := os.Stat(assetsDir); err == nil {
+		r.Static("/assets", assetsDir)
+	}
+	if _, err := os.Stat(filepath.Join(distDir, "vite.svg")); err == nil {
+		r.StaticFile("/vite.svg", filepath.Join(distDir, "vite.svg"))
+	}
+
+	go startFrontendServer(distDir, indexFile)
+
 	r.POST("/sftp/creds", AuthRequired(), func(c *gin.Context) {
 		user, err := sftpTools.GetCurrentUser(c)
 		if err != nil {
@@ -1153,6 +1263,7 @@ func main() {
     `, form.Username, hashed, form.FirstName, form.LastName, form.Email, form.LibraryPath, defaultServerIP).Scan(&userID)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "Failed to create user"})
+			//TODO: add more detailed errors to debug
 			return
 		}
 
@@ -1189,11 +1300,7 @@ func main() {
 
 			guestUser, err := ensureGuestUser()
 			if err != nil {
-				log.Printf("[login/guest] init guest failed: %v", err)
-				c.JSON(500, gin.H{
-					"error":   "Failed to initialize guest",
-					"details": err.Error(),
-				})
+				c.JSON(500, gin.H{"error": "Failed to initialize guest"})
 				return
 			}
 			sessionID := generateRandomSessionID()
@@ -1995,5 +2102,45 @@ ORDER BY um.uploaded_at DESC
 		uploaded = nil
 	})
 
-	r.Run(":8080")
+	r.NoRoute(func(c *gin.Context) {
+		if c.Request.Method != http.MethodGet {
+			c.JSON(404, gin.H{"error": "not found"})
+			return
+		}
+		if _, err := os.Stat(indexFile); err != nil {
+			c.JSON(500, gin.H{"error": "frontend missing"})
+			return
+		}
+		c.File(indexFile)
+	})
+
+	apiAddr := fmt.Sprintf(":%d", portsConfig.APIPort)
+	log.Printf("API listening at http://localhost:%d", portsConfig.APIPort)
+
+	r.Run(apiAddr)
+}
+
+func startFrontendServer(distDir, indexFile string) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/config/ports", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(portsConfig)
+	})
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		requestPath := r.URL.Path
+		clean := filepath.Clean(requestPath)
+		target := filepath.Join(distDir, clean)
+		if info, err := os.Stat(target); err == nil && !info.IsDir() {
+			http.ServeFile(w, r, target)
+			return
+		}
+		http.ServeFile(w, r, indexFile)
+	})
+
+	addr := fmt.Sprintf(":%d", portsConfig.FrontendPort)
+	log.Printf("Serving frontend on %s", addr)
+	if err := http.ListenAndServe(addr, mux); err != nil && err != http.ErrServerClosed {
+		log.Printf("frontend server error: %v", err)
+	}
 }
