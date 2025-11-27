@@ -535,6 +535,8 @@
 
 <script>
 import { getApiBase, getPortsConfig } from "../apiBase";
+const apiBase = getApiBase();
+const api = apiBase;
 export default {
   name: "Auth",
   data() {
