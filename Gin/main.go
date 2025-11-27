@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"regexp"
 	"runtime"
 	"sort"
@@ -334,6 +335,78 @@ func ensureGuestUser() (*sftpTools.User, error) {
 		IsAdmin:  false,
 	}
 	return &sftpTools.CurrentUser, nil
+}
+
+func findPgBin() string {
+	candidates := []string{
+		"/opt/homebrew/opt/postgresql@14/bin",
+		"/opt/homebrew/opt/postgresql/bin",
+		"/usr/local/opt/postgresql@14/bin",
+		"/usr/local/opt/postgresql/bin",
+	}
+	for _, dir := range candidates {
+		if info, err := os.Stat(dir); err == nil && info.IsDir() {
+			return dir
+		}
+	}
+	return ""
+}
+
+func initLocalDBIfNeeded() {
+	pgBin := findPgBin()
+	if pgBin == "" {
+		log.Printf("postgres binaries not found; skipping auto DB init")
+		return
+	}
+	createuser := filepath.Join(pgBin, "createuser")
+	createdb := filepath.Join(pgBin, "createdb")
+	psql := filepath.Join(pgBin, "psql")
+
+	run := func(cmd string, args ...string) {
+		c := exec.Command(cmd, args...)
+		_ = c.Run()
+	}
+
+	run(createuser, "-s", "musicuser")
+	run(createdb, "-O", "musicuser", "musicdb")
+
+	schemaPath := filepath.Join("sql", "schema.sql")
+	if _, err := os.Stat(schemaPath); err == nil {
+		run(psql, "-d", "musicdb", "-f", schemaPath)
+	}
+}
+
+func tryStartPostgresService() {
+	services := []string{"postgresql@14", "postgresql"}
+	for _, svc := range services {
+		cmd := exec.Command("brew", "services", "start", svc)
+		if err := cmd.Run(); err == nil {
+			log.Printf("attempted to start %s via brew services", svc)
+			return
+		}
+	}
+}
+
+func openDBWithRetry(databaseURL string) (*sql.DB, error) {
+	var lastErr error
+	for i := 0; i < 3; i++ {
+		db, err := sql.Open("postgres", databaseURL)
+		if err != nil {
+			lastErr = err
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		if err = db.Ping(); err != nil {
+			lastErr = err
+			if strings.Contains(err.Error(), "connection refused") && i == 0 {
+				tryStartPostgresService()
+			}
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		return db, nil
+	}
+	return nil, lastErr
 }
 func buildTreeFromPending(pending map[string]*PendingAlbum) []TreeSong {
 	tree := []TreeSong{}
@@ -882,15 +955,19 @@ func main() {
 	consumerKey = os.Getenv("DISCOGS_KEY")
 	consumerSecret = os.Getenv("DISCOGS_SECRET")
 	databaseURL := getEnv("DATABASE_URL", portsConfig.DBURL)
-	db, err = sql.Open("postgres", databaseURL)
-	tagedit.SetDB(db)
-	sftpTools.SetDB(db)
-	sftpTools.SetDefaultPort(portsConfig.SFTPPort)
-	if err != nil {
-		fmt.Println("Failed to open DB:", err)
+
+	// Attempt local DB bootstrap if using defaults
+	if databaseURL == "" || strings.Contains(databaseURL, "musicuser") {
+		initLocalDBIfNeeded()
 	}
-	if err = db.Ping(); err != nil {
-		fmt.Println("Failed to ping DB:", err)
+
+	db, err = openDBWithRetry(databaseURL)
+	if err != nil {
+		log.Printf("Failed to connect to DB: %v", err)
+	} else {
+		tagedit.SetDB(db)
+		sftpTools.SetDB(db)
+		sftpTools.SetDefaultPort(portsConfig.SFTPPort)
 	}
 
 	r := gin.Default()
