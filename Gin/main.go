@@ -79,13 +79,14 @@ type PendingAlbum struct {
 }
 
 type PortsConfig struct {
-	APIPort      int `json:"api_port"`
-	FrontendPort int `json:"frontend_port"`
-	SFTPPort     int `json:"sftp_port"`
+	APIPort      int    `json:"api_port"`
+	FrontendPort int    `json:"frontend_port"`
+	SFTPPort     int    `json:"sftp_port"`
 	DBURL        string `json:"db_url"`
 }
 
 var portsConfig PortsConfig
+
 type UploadStatus struct {
 	Artist           string `json:"artist"`
 	Title            string `json:"title"`
@@ -1298,7 +1299,11 @@ func main() {
 
 			guestUser, err := ensureGuestUser()
 			if err != nil {
-				c.JSON(500, gin.H{"error": "Failed to initialize guest"})
+				log.Printf("[login/guest] init guest failed: %v", err)
+				c.JSON(500, gin.H{
+					"error":   "Failed to initialize guest",
+					"details": err.Error(),
+				})
 				return
 			}
 			sessionID := generateRandomSessionID()
