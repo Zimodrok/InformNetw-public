@@ -1246,7 +1246,11 @@ func main() {
 			form.Username, form.Email,
 		).Scan(&exists)
 		if err != nil {
-			c.JSON(500, gin.H{"error": "Database error"})
+			log.Printf("[register] exists check failed for %s: %v", form.Username, err)
+			c.JSON(500, gin.H{
+				"error":   "Database error",
+				"details": err.Error(),
+			})
 			return
 		}
 		if exists {
@@ -1262,8 +1266,11 @@ func main() {
         RETURNING uid
     `, form.Username, hashed, form.FirstName, form.LastName, form.Email, form.LibraryPath, defaultServerIP).Scan(&userID)
 		if err != nil {
-			c.JSON(500, gin.H{"error": "Failed to create user"})
-			//TODO: add more detailed errors to debug
+			log.Printf("[register] create user failed username=%s email=%s: %v", form.Username, form.Email, err)
+			c.JSON(500, gin.H{
+				"error":   "Failed to create user",
+				"details": err.Error(),
+			})
 			return
 		}
 
