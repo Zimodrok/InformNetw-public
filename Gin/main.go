@@ -1189,7 +1189,11 @@ func main() {
 
 			guestUser, err := ensureGuestUser()
 			if err != nil {
-				c.JSON(500, gin.H{"error": "Failed to initialize guest"})
+				log.Printf("[login/guest] init guest failed: %v", err)
+				c.JSON(500, gin.H{
+					"error":   "Failed to initialize guest",
+					"details": err.Error(),
+				})
 				return
 			}
 			sessionID := generateRandomSessionID()
