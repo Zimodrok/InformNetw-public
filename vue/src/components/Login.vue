@@ -1000,7 +1000,6 @@ export default {
           };
         }
 
-        const api = getApiBase();
         const res = await fetch(`${api}/sftp/creds`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
