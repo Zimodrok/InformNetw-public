@@ -1129,6 +1129,8 @@ func main() {
 			return
 		}
 
+		log.Printf("[sftp/creds] user=%d host=%s port=%d username=%s path=%s", user.ID, creds.Host, creds.Port, creds.Username, creds.Path)
+
 		addr := fmt.Sprintf("%s:%d", creds.Host, creds.Port)
 		config := &ssh.ClientConfig{
 			User:            creds.Username,
@@ -1189,6 +1191,7 @@ func main() {
 		c.JSON(200, gin.H{
 			"connected": true,
 			"status":    "ok",
+			"path":      creds.Path,
 		})
 	})
 
