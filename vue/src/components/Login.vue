@@ -688,17 +688,18 @@ export default {
         if (!res.ok) {
           this.error = data.details || data.error || "SFTP connection failed";
 
+          this.showInitServer = true;
+          this.initServerHighlight = true;
+          setTimeout(() => {
+            this.initServerHighlight = false;
+          }, 2000);
+
+          const host = (this.hostInput || "").toLowerCase();
           if (
-            data.error === "connection-failed" ||
-            data.error === "not-rclone" ||
-            /unreachable/i.test(this.error) ||
-            /not listening/i.test(this.error)
+            data.error === "connection-failed" &&
+            (host.includes("localhost") || host.includes("127.0.0.1"))
           ) {
-            this.showInitServer = true;
-            this.initServerHighlight = true;
-            setTimeout(() => {
-              this.initServerHighlight = false;
-            }, 2000);
+            this.onInitServer();
           }
 
           setTimeout(() => (this.error = ""), 3000);
