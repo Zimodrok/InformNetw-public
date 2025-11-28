@@ -134,6 +134,10 @@ class Musicapp < Formula
 
     schema = opt_pkgshare/"sql/schema.sql"
     system(env, psql.to_s, "-d", "musicdb", "-f", schema.to_s) if schema.exist?
+
+    %w[library_path server_ip].each do |col|
+      system(env, psql.to_s, "-d", "musicdb", "-c", "ALTER TABLE users ADD COLUMN IF NOT EXISTS #{col} text;")
+    end
   rescue StandardError => e
     opoo "Automatic database setup failed: #{e}"
   end
