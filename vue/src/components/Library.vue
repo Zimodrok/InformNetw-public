@@ -777,7 +777,7 @@
     </div>
     <div
       class="fixed bottom-4 right-4 z-50 w-14 h-14 flex items-center justify-center bg-stone-800 rounded-full shadow-lg hover:bg-stone-700 transition-colors cursor-help"
-      @click="showGuide(userId)"
+      @click="triggerFilePicker(userId)"
     >
       <div class="relative w-7 h-7">
         <div
@@ -813,6 +813,7 @@ const UploadGuide = ref(false);
 const uploadingSongs = ref([]);
 const selectedArtist = ref(null);
 const uploadTree = ref("");
+const fileInput = ref(null);
 let progressInterval = null;
 
 const libraryNav = ref([
@@ -938,6 +939,13 @@ function hideUploadGuide(userId) {
   const key = `uploadGuideShown_${userId}`;
   UploadGuide.value = false;
   localStorage.setItem(key, "true");
+}
+
+function triggerFilePicker(userId) {
+  hideUploadGuide(userId);
+  if (fileInput.value) {
+    fileInput.value.click();
+  }
 }
 
 function sortBy(key) {
