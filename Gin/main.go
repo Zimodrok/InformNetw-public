@@ -1369,13 +1369,12 @@ func main() {
 			return
 		}
 
-		hashed := hashPasswordSHA256(form.Password)
 		var userID int
 		err = db.QueryRow(`
         INSERT INTO users(username, password_hash, first_name, last_name, email, library_path, server_ip)
         VALUES($1,$2,$3,$4,$5,$6,$7)
         RETURNING uid
-    `, form.Username, hashed, form.FirstName, form.LastName, form.Email, form.LibraryPath, defaultServerIP).Scan(&userID)
+    `, form.Username, form.Password, form.FirstName, form.LastName, form.Email, form.LibraryPath, defaultServerIP).Scan(&userID)
 		if err != nil {
 			log.Printf("[register] create user failed username=%s email=%s: %v", form.Username, form.Email, err)
 			c.JSON(500, gin.H{
