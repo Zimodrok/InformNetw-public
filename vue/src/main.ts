@@ -4,21 +4,39 @@ import { router } from './router'
 import './style.css'
 
 async function bootstrap() {
-  let apiBase = (import.meta as any).env?.VITE_API_BASE?.trim?.() || ''
+  const envBase = (import.meta as any).env?.VITE_API_BASE?.trim?.() || ''
+  let apiBase = envBase
   let cfg: any = null
+
   if (!apiBase) {
-    try {
-      const res = await fetch('/config/ports', { credentials: 'include' })
-      if (res.ok) {
-        cfg = await res.json()
-        const host = window.location.hostname || 'localhost'
-        const protocol = window.location.protocol || 'http:'
-        if (cfg && cfg.api_port) {
-          apiBase = `${protocol}//${host}:${cfg.api_port}`
-        }
+    const host = window.location.hostname || 'localhost'
+    const protocol = window.location.protocol || 'http:'
+    const currentPort = window.location.port
+    const candidates: string[] = []
+
+    // Try API port from heuristic (frontendPort - 1) first.
+    if (currentPort) {
+      const p = parseInt(currentPort, 10)
+      if (!isNaN(p) && p > 0) {
+        candidates.push(`${protocol}//${host}:${p - 1}`)
       }
-    } catch (e) {
-      console.warn('ports config fetch failed, using defaults', e)
+    }
+    // Fall back to common default.
+    candidates.push(`${protocol}//${host}:8080`)
+
+    for (const base of candidates) {
+      try {
+        const res = await fetch(`${base}/config/ports`, {
+          credentials: 'include',
+        })
+        if (res.ok) {
+          cfg = await res.json()
+          apiBase = `${protocol}//${host}:${cfg.api_port || new URL(base).port}`
+          break
+        }
+      } catch (e) {
+        // try next candidate
+      }
     }
   }
 
