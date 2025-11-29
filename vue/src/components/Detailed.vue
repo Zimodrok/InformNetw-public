@@ -494,7 +494,7 @@
 </template>
 
 <script setup lang="js">
-import { ref, nextTick, onMounted } from "vue";
+import { ref, nextTick, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getApiBase } from "../apiBase";
 const isOpen = ref(false);
@@ -527,63 +527,6 @@ import { usePlayer } from "../player/usePlayer";
 const player = usePlayer();
 function goToLibraryView(view) {
   router.push({ path: "/library", query: { view } });
-}
-function parseSearch(query) {
-  const tags = {
-    artist: [],
-    album: [],
-    genre: [],
-    song: [],
-    text: [],
-  };
-  if (!query) return tags;
-  query
-    .split(/\s+/)
-    .filter(Boolean)
-    .forEach((token) => {
-      const lower = token.toLowerCase();
-      if (lower.startsWith("artist:")) tags.artist.push(lower.slice(7));
-      else if (lower.startsWith("album:")) tags.album.push(lower.slice(6));
-      else if (lower.startsWith("genre:")) tags.genre.push(lower.slice(6));
-      else if (lower.startsWith("song:")) tags.song.push(lower.slice(5));
-      else tags.text.push(lower);
-    });
-  return tags;
-}
-
-const filteredAlbums = computed(() => {
-  if (!["Albums", "Recently Added"].includes(activeView.value))
-    return albums.value;
-
-  const tags = parseSearch(searchQuery.value);
-  const hasTags =
-    tags.artist.length ||
-    tags.album.length ||
-    tags.genre.length ||
-    tags.text.length;
-  if (!hasTags) return albums.value;
-
-  const matches = (album) => {
-    const name = (album.name || "").toLowerCase();
-    const artist = (album.artist || "").toLowerCase();
-    const genre = (album.genre || "").toLowerCase();
-    if (tags.artist.length && !tags.artist.every((t) => artist.includes(t)))
-      return false;
-    if (tags.album.length && !tags.album.every((t) => name.includes(t)))
-      return false;
-    if (tags.genre.length && !tags.genre.every((t) => genre.includes(t)))
-      return false;
-    if (
-      tags.text.length &&
-      !tags.text.every(
-        (t) => name.includes(t) || artist.includes(t) || genre.includes(t),
-      )
-    )
-      return false;
-    return true;
-  };
-  return albums.value.filter(matches);
-});
 
 function toPlayerTrack(song) {
   return {
@@ -621,32 +564,6 @@ function addAlbumToQueue() {
 }
 const isDiscogsModalOpen = ref(false);
 
-const displayTokens = computed(() => {
-  const tokens = searchQuery.value.split(/\s+/).filter(Boolean);
-  return tokens.map((raw) => {
-    const m = raw.match(/^(album|artist|genre|song|text):(.*)$/i);
-    if (!m) {
-      return { raw, value: raw, isTag: false, class: "text-white" };
-    }
-    const kind = m[1].toLowerCase();
-    const val = (m[2] || "").trim();
-    const palette = {
-      album: "bg-red-800/60 text-red-100 border border-red-500/60",
-      artist: "bg-purple-800/60 text-purple-100 border border-purple-500/60",
-      genre: "bg-green-800/60 text-green-100 border border-green-500/60",
-      song: "bg-blue-800/60 text-blue-100 border border-blue-500/60",
-      text: "bg-amber-800/60 text-amber-100 border border-amber-500/60",
-    };
-    const cls = palette[kind] || "bg-stone-700 text-stone-100 border border-stone-500/60";
-    return {
-      raw,
-      label: kind,
-      value: val,
-      isTag: val.length > 0,
-      class: cls,
-    };
-  });
-});
 function playSong(song) {
   if (!audioPlayer.value) return;
   audioPlayer.value.src = `${getApiBase()}/stream/${song.song_id}`;
@@ -773,7 +690,7 @@ async function handleCoverUpload(event) {
 
   if (ratio > 1.2) {
     alert(
-      `Image must be square or close to square (max 20% difference). 
+      `Image must be square or close to square (max 20% difference).
 Your image: ${w}×${h}`,
     );
     return;
