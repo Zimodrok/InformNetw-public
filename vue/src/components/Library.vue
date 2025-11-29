@@ -195,7 +195,7 @@
           </div>
           <div
             v-if="activeView === 'Artists'"
-            class="md:py-[2rem] h-20 md:h-[30rem] border-2 border-dashed border-stone-500 hover:border-slate-700 transition-colors bg-slate-100 text-stone-800 dark:bg-slate-900 dark:text-stone-400 rounded-3xl m-2 mx-1 xl:mx-6 ml-1 mr-3 md:ml-2 md:mr-0 overflow-x-auto overflow-y-scroll"
+            class="md:py-[2rem] h-20 md:h-[30rem] border-2 border-dashed border-stone-500 hover:border-neutral-700 transition-colors bg-neutral-100 text-stone-800 dark:bg-neutral-900 dark:text-stone-400 rounded-3xl m-2 mx-1 xl:mx-6 md:ml-1 md:mr-2 overflow-x-auto overflow-y-scroll"
             style="scrollbar-width: none"
           >
             <!-- Alphabet quick jump for artists -->
@@ -227,7 +227,7 @@
           </div>
           <div
             v-if="activeView === 'Genres'"
-            class="md:py-[2rem] h-20 md:h-[30rem] border-2 border-dashed border-stone-500 hover:border-slate-700 transition-colors bg-slate-100 text-stone-800 dark:bg-slate-900 dark:text-stone-400 rounded-3xl m-2 mx-1 xl:mx-6 ml-1 mr-3 md:ml-2 md:mr-0 overflow-x-auto md:overflow-y-scroll"
+            class="md:py-[2rem] h-20 md:h-[30rem] border-2 border-dashed border-stone-500 hover:border-neutral-700 transition-colors bg-neutral-100 text-stone-800 dark:bg-neutral-900 dark:text-stone-400 rounded-3xl m-2 mx-1 xl:mx-6 md:ml-1 md:mr-2 overflow-x-auto overflow-y-scroll"
             style="scrollbar-width: none"
           >
             <!-- Alphabet quick jump -->
@@ -262,7 +262,7 @@
         <!-- Main content -->
         <div class="flex-1 flex flex-col relative h-screen">
           <div
-            class="relative md:absolute flex items-center justify-between h-[4rem] max-w-screen top-0 left-0 right-0 z-20 px-6 py-4 bg-[linear-gradient(to_bottom,rgba(var(--bg),1)_0%,rgba(var(--bg),1)_40%,rgba(var(--bg),0.9)_55%,rgba(var(--bg),0.93)_70%,rgba(var(--bg),1)_100%)] backdrop-blur-sm dark:[--bg:0,0,0] [--bg:241,241,241]"
+            class="relative md:absolute flex items-center justify-between h-[4rem] max-w-screen top-0 left-0 right-0 z-[60] px-6 py-4 bg-[linear-gradient(to_bottom,rgba(var(--bg),1)_0%,rgba(var(--bg),1)_40%,rgba(var(--bg),0.9)_55%,rgba(var(--bg),0.93)_70%,rgba(var(--bg),1)_100%)] backdrop-blur-sm dark:[--bg:0,0,0] [--bg:241,241,241]"
           >
             <p
               v-if="activeView === 'Recently Added'"
@@ -295,7 +295,7 @@
               Genres
             </p>
             <div
-              class="items-center flex space-x-4 bg-stone-200 focus-within:ring-2 focus-within:ring-red-500 dark:bg-stone-700 text-stone-900 rounded-[12rem] p-1 px-2"
+              class="items-center w-30 flex space-x-4 bg-stone-200 focus-within:ring-2 focus-within:ring-red-500 dark:bg-stone-700 text-stone-900 rounded-[12rem] p-1 px-2"
             >
               <svg
                 class="w-8 h-6 fill-stone-500 dark:fill-stone-400"
@@ -307,18 +307,48 @@
                   fill-opacity="0.85"
                 />
               </svg>
-              <input
-                type="text"
-                placeholder="Find in Albums"
-                v-model="searchQuery"
-                class="dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none py-2 bg-stone-200 dark:bg-stone-700 text-stone-900 rounded-2xl"
-              />
+              <label
+                class="relative h-full flex-1 whitespace-nowrap overflow-hidden w-20 md:w-[12rem] lg:w-[14rem] dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none bg-stone-200 dark:bg-stone-700 text-transparent caret-white rounded-2xl"
+              >
+                <input
+                  type="text"
+                  v-model="searchQuery"
+                  class="absolute inset-0 w-full h-4 bg-transparent border-none outline-none text-transparent caret-white"
+                />
+                <template v-if="!displayTokens.length">
+                  <span class="text-stone-500 dark:text-stone-300"
+                    >Find in Albums</span
+                  >
+                </template>
+                <template v-else>
+                  <span
+                    v-for="(t, idx) in displayTokens"
+                    :key="idx"
+                    class="flex items-center text-base"
+                  >
+                    <template v-if="t.isTag && t.value">
+                      <span
+                        class="rounded-2xl pl-2 pr-1 text-sm font-semibold -translate-x-1"
+                        :class="t.class"
+                      >
+                        {{ t.label }}
+                      </span>
+                      <span class="text-white -translate-x-1">{{
+                        t.value
+                      }}</span>
+                    </template>
+                    <template v-else>
+                      <span :class="t.class">{{ t.value || t.raw }}</span>
+                    </template>
+                  </span>
+                </template>
+              </label>
             </div>
           </div>
 
           <!-- Dropzone -->
           <div
-            class="library-dropzone w-full h-full"
+            class="library-dropzone w-full h-full z-50"
             @dragover.prevent="onDragOver"
             @dragenter.prevent="onDragEnter"
             @dragleave.prevent="onDragLeave"
@@ -331,6 +361,16 @@
                 multiple
                 webkitdirectory
                 directory
+                accept="audio/flac,.flac,.FLAC"
+                style="display: none"
+                @change="handleFiles"
+              />
+              <input
+                ref="filepickerInput"
+                type="file"
+                multiple
+                accept="audio/flac,.flac,.FLAC,audio/x-flac"
+                style="display: none"
                 @change="handleFiles"
               />
             </form>
@@ -377,6 +417,7 @@
                       v-for="album in artistAlbums"
                       :key="album.id"
                       class="group cursor-pointer"
+                      @click="playFromSong(song)"
                     >
                       <RouterLink :to="`/album/${album.id}`">
                         <div
@@ -660,7 +701,7 @@
                             >
                             <span
                               v-else
-                              class="inline-block transform rotate-180 translate-y-[2px]"
+                              class="inline-block transform rotate-180 translate-y-[0.125rem]"
                               >⇧</span
                             >
                           </span>
@@ -670,14 +711,14 @@
                     </tr>
                   </thead>
 
-                  <tbody
-                    class="divide-y divide-stone-100 dark:divide-stone-700 text-stone-900 dark:text-stone-200 text-[1.1rem]"
-                  >
-                    <tr
-                      v-for="(song, i) in sortedSongs"
-                      :key="song.id"
-                      :class="[
-                        'dark:even:bg-stone-800 dark:odd:bg-stone-900 even:bg-neutral-50 odd:bg-white select-none hover:bg-stone-100 dark:hover:bg-stone-700/40 transition-colors',
+          <tbody
+            class="divide-y divide-stone-100 dark:divide-stone-700 text-stone-900 dark:text-stone-200 text-[1.1rem]"
+          >
+            <tr
+              v-for="(song, i) in sortedSongs"
+              :key="song.id"
+              :class="[
+                'dark:even:bg-stone-800 dark:odd:bg-stone-900 even:bg-neutral-50 odd:bg-white select-none hover:bg-stone-100 dark:hover:bg-stone-700/40 transition-colors',
                         song.missing
                           ? 'opacity-60 text-stone-400 dark:text-stone-500 pointer-events-none'
                           : '',
@@ -700,6 +741,7 @@
                           col.key === 'album' || col.key === 'genre'
                             ? 'hidden lg:table-cell'
                             : '',
+                          'cursor-pointer',
                         ]"
                       >
                         <div
@@ -724,10 +766,11 @@
     <!-- Upload popup -->
     <div
       v-if="uploadingSongs.length"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-30"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      @click.self="clearUploading"
     >
       <div
-        class="bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 w-[900px] max-h-[80vh] overflow-y-auto"
+        class="bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 w-[90vw] max-w-screen-xl max-h-[80vh] overflow-y-auto z-[60]"
       >
         <!-- Actions -->
         <div class="flex justify-end">
@@ -769,16 +812,14 @@
               Library Tree
             </h3>
             <!-- prettier-ignore -->
-            <pre
-              class="p-3 bg-stone-100 dark:bg-stone-700 text-stone-900 dark:text-stone-200 rounded-lg text-sm font-mono overflow-auto h-full leading-tight whitespace-pre tracking-normal">
-          {{ uploadTree }}</pre>
+            <pre class="p-3 bg-stone-100 dark:bg-stone-700 text-stone-900 dark:text-stone-200 rounded-lg text-sm font-mono overflow-auto h-full leading-tight whitespace-pre tracking-normal">{{ uploadTree }}</pre>
           </div>
         </div>
       </div>
     </div>
     <div
       class="fixed bottom-4 right-4 z-50 w-14 h-14 flex items-center justify-center bg-stone-800 rounded-full shadow-lg hover:bg-stone-700 transition-colors cursor-help"
-      @click="showGuide(userId)"
+      @click="triggerFilePicker(userId)"
     >
       <div class="relative w-7 h-7">
         <div
@@ -796,7 +837,6 @@ import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import Fuse from "fuse.js";
 import { getApiBase } from "../apiBase";
-import { usePlayer } from "../player/usePlayer";
 const router = useRouter();
 const route = useRoute();
 const username = ref("");
@@ -815,19 +855,22 @@ const UploadGuide = ref(false);
 const uploadingSongs = ref([]);
 const selectedArtist = ref(null);
 const uploadTree = ref("");
+const fileInput = ref(null);
+const filepickerInput = ref(null);
 let progressInterval = null;
 
+import { usePlayer } from "../player/usePlayer";
 const player = usePlayer();
 
 function toPlayerTrack(song) {
   return {
-    id: song.song_id,
+    id: song.song_id || song.id,
     title: song.title,
     artist: song.artist || song.album_artist || "Unknown Artist",
     album: song.album || song.album_name || "Unknown Album",
     durationLabel: song.duration,
     cover: song.cover || song.album_cover || null,
-    streamUrl: `${getApiBase()}/stream/${song.song_id}`,
+    streamUrl: `${getApiBase()}/stream/${song.song_id || song.id}`,
   };
 }
 
@@ -842,7 +885,8 @@ function shuffleList(list) {
 
 function playFromSong(song) {
   const list = sortedSongs.value || songs.value || [];
-  const idx = list.findIndex((s) => s.song_id === song.song_id);
+  const targetId = song.song_id || song.id;
+  const idx = list.findIndex((s) => (s.song_id || s.id) === targetId);
   if (idx === -1) return;
 
   const below = list.slice(idx).map(toPlayerTrack);
@@ -921,28 +965,65 @@ const fetchAlbums = async () => {
   }
 };
 
-const SortedAlbums = computed(() => {
-  if (!searchQuery.value) return albums.value;
+function parseSearch(query) {
+  const tags = {
+    artist: [],
+    album: [],
+    genre: [],
+    song: [],
+    text: [],
+  };
+  if (!query) return tags;
+  query
+    .split(/\s+/)
+    .filter(Boolean)
+    .forEach((token) => {
+      const lower = token.toLowerCase();
+      if (lower.startsWith("artist:")) tags.artist.push(lower.slice(7));
+      else if (lower.startsWith("album:")) tags.album.push(lower.slice(6));
+      else if (lower.startsWith("genre:")) tags.genre.push(lower.slice(6));
+      else if (lower.startsWith("song:")) tags.song.push(lower.slice(5));
+      else tags.text.push(lower);
+    });
+  return tags;
+}
 
-  const q = searchQuery.value.toLowerCase();
-  return albums.value.filter(
-    (a) =>
-      a.name.toLowerCase().includes(q) || a.artist.toLowerCase().includes(q),
-  );
-});
 const filteredAlbums = computed(() => {
-  if (activeView.value !== "Albums" || activeView.value !== "Recently Added")
+  if (!["Albums", "Recently Added"].includes(activeView.value))
     return albums.value;
-  if (!searchQuery.value) return albums.value;
 
-  const fuse = new Fuse(albums.value, {
-    keys: ["name", "artist"],
-    threshold: 0.4,
-  });
-  return fuse.search(searchQuery.value).map((r) => r.item);
+  const tags = parseSearch(searchQuery.value);
+  const hasTags =
+    tags.artist.length ||
+    tags.album.length ||
+    tags.genre.length ||
+    tags.text.length;
+  if (!hasTags) return albums.value;
+
+  const matches = (album) => {
+    const name = (album.name || "").toLowerCase();
+    const artist = (album.artist || "").toLowerCase();
+    const genre = (album.genre || "").toLowerCase();
+    if (tags.artist.length && !tags.artist.every((t) => artist.includes(t)))
+      return false;
+    if (tags.album.length && !tags.album.every((t) => name.includes(t)))
+      return false;
+    if (tags.genre.length && !tags.genre.every((t) => genre.includes(t)))
+      return false;
+    if (
+      tags.text.length &&
+      !tags.text.every(
+        (t) => name.includes(t) || artist.includes(t) || genre.includes(t),
+      )
+    )
+      return false;
+    return true;
+  };
+  return albums.value.filter(matches);
 });
 
-const activeView = ref("Albums");
+const savedView = loadFromLocal("activeView", "Albums");
+const activeView = ref(savedView || "Albums");
 
 const setActive = (viewName) => {
   libraryNav.value.forEach((i) => (i.active = i.name === viewName));
@@ -982,6 +1063,11 @@ function hideUploadGuide(userId) {
   const key = `uploadGuideShown_${userId}`;
   UploadGuide.value = false;
   localStorage.setItem(key, "true");
+}
+
+function triggerFilePicker(userId) {
+  showGuide(userId);
+  filepickerInput.value.click();
 }
 
 function sortBy(key) {
@@ -1139,50 +1225,22 @@ const onDragLeave = (e) => {
   dragOver.value = false;
 };
 
-const handleDrop = async (e) => {
-  dragOver.value = false;
-  const items = e.dataTransfer?.items;
-  if (!items) return;
-
-  const files = [];
-  const traverseEntry = async (entry, path = "") => {
-    if (entry.isFile) {
-      await new Promise((resolve) => {
-        entry.file((file) => {
-          if (file.name.toLowerCase().endsWith(".flac")) {
-            file.relativePath = path + file.name;
-            files.push(file);
-          }
-          resolve();
-        });
-      });
-    } else if (entry.isDirectory) {
-      const reader = entry.createReader();
-      const entries = await new Promise((res) => reader.readEntries(res));
-      for (const subEntry of entries) {
-        await traverseEntry(subEntry, path + entry.name + "/");
-      }
-    }
-  };
-
-  for (const item of items) {
-    const entry = item.webkitGetAsEntry?.();
-    if (entry) await traverseEntry(entry);
-  }
-
-  if (!files.length) {
-    console.warn("No FLAC files found in dropped folder(s)");
+const uploadFiles = async (files) => {
+  const flacs = files.filter((f) =>
+    f.name.toLowerCase().trim().endsWith(".flac"),
+  );
+  if (!flacs.length) {
+    console.warn("No FLAC files found in selection/drop");
     return;
   }
-  uploadingSongs.value = [];
-  uploadingSongs.value = files.map((f) => ({
+  uploadingSongs.value = flacs.map((f) => ({
     artist: null,
     title: f.name.replace(/\.[^/.]+$/, ""),
     done: false,
   }));
 
   const formData = new FormData();
-  files.forEach((f) => formData.append("files[]", f));
+  flacs.forEach((f) => formData.append("files[]", f));
 
   startProgressPolling();
   const api = getApiBase();
@@ -1191,6 +1249,55 @@ const handleDrop = async (e) => {
     credentials: "include",
     body: formData,
   });
+};
+
+const handleDrop = async (e) => {
+  dragOver.value = false;
+  const items = e.dataTransfer?.items;
+  if (!items) return;
+
+  const entries = [];
+  for (const item of Array.from(items)) {
+    const entry = item.webkitGetAsEntry?.();
+    if (entry) entries.push(entry);
+  }
+  const files = [];
+  const traverseEntry = async (entry, path = "") => {
+    if (entry.isFile) {
+      await new Promise((resolve) => {
+        entry.file((file) => {
+          if (file) {
+            file.relativePath = path + file.name;
+            files.push(file);
+          }
+          resolve();
+        });
+      });
+    } else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      const subEntries = await new Promise((res) => reader.readEntries(res));
+      for (const subEntry of subEntries) {
+        await traverseEntry(subEntry, path + entry.name + "/");
+      }
+    }
+  };
+
+  for (const entry of entries) {
+    await traverseEntry(entry);
+  }
+
+  await uploadFiles(files);
+};
+
+const handleFiles = async (e) => {
+  const list = e.target.files;
+  if (!list || !list.length) return;
+  const files = Array.from(list).map((f) => {
+    const rel = f.webkitRelativePath || f.relativePath || f.name;
+    f.relativePath = rel;
+    return f;
+  });
+  await uploadFiles(files);
 };
 
 const groupedByGenre = computed(() => {
@@ -1240,11 +1347,23 @@ const fuse = computed(() => {
 const filteredGenres = computed(() => {
   if (!searchQuery.value) return [];
 
-  const fuse = new Fuse(albums.value, {
-    keys: ["genre"],
-    threshold: 0.15,
+  const tags = parseSearch(searchQuery.value);
+  const results = albums.value.filter((album) => {
+    const genre = (album.genre || "").toLowerCase();
+    const name = (album.name || "").toLowerCase();
+    const artist = (album.artist || "").toLowerCase();
+
+    if (tags.genre.length && !tags.genre.every((t) => genre.includes(t)))
+      return false;
+    if (
+      tags.text.length &&
+      !tags.text.every(
+        (t) => genre.includes(t) || name.includes(t) || artist.includes(t),
+      )
+    )
+      return false;
+    return true;
   });
-  const results = fuse.search(searchQuery.value).map((r) => r.item);
 
   const groups = {};
   results.forEach((album) => {
@@ -1257,13 +1376,64 @@ const filteredGenres = computed(() => {
 const filteredSongs = computed(() => {
   if (!searchQuery.value) return songs.value;
 
-  const fuse = new Fuse(songs.value, {
-    keys: ["title", "artist", "album", "genre"],
-    threshold: 0.2,
-    ignoreLocation: true,
+  const tags = parseSearch(searchQuery.value);
+  const results = songs.value.filter((song) => {
+    const title = (song.title || "").toLowerCase();
+    const artist = (song.artist || "").toLowerCase();
+    const album = (song.album || "").toLowerCase();
+    const genre = (song.genre || "").toLowerCase();
+
+    if (tags.song.length && !tags.song.every((t) => title.includes(t)))
+      return false;
+    if (tags.artist.length && !tags.artist.every((t) => artist.includes(t)))
+      return false;
+    if (tags.album.length && !tags.album.every((t) => album.includes(t)))
+      return false;
+    if (tags.genre.length && !tags.genre.every((t) => genre.includes(t)))
+      return false;
+    if (
+      tags.text.length &&
+      !tags.text.every(
+        (t) =>
+          title.includes(t) ||
+          artist.includes(t) ||
+          album.includes(t) ||
+          genre.includes(t),
+      )
+    )
+      return false;
+    return true;
   });
 
-  return fuse.search(searchQuery.value).map((r) => r.item);
+  return results;
+});
+
+const displayTokens = computed(() => {
+  const tokens = searchQuery.value.split(/\s+/).filter(Boolean);
+  return tokens.map((raw) => {
+    const m = raw.match(/^(album|artist|genre|song|text):(.*)$/i);
+    if (!m) {
+      return { raw, value: raw, isTag: false, class: "text-white" };
+    }
+    const kind = m[1].toLowerCase();
+    const val = (m[2] || "").trim();
+    const palette = {
+      album: "bg-red-800/60 text-red-100 border border-red-500/60",
+      artist: "bg-purple-800/60 text-purple-100 border border-purple-500/60",
+      genre: "bg-green-800/60 text-green-100 border border-green-500/60",
+      song: "bg-blue-800/60 text-blue-100 border border-blue-500/60",
+      text: "bg-amber-800/60 text-amber-100 border border-amber-500/60",
+    };
+    const cls =
+      palette[kind] || "bg-stone-700 text-stone-100 border border-stone-500/60";
+    return {
+      raw,
+      label: kind,
+      value: val,
+      isTag: val.length > 0,
+      class: cls,
+    };
+  });
 });
 const sortedSongs = computed(() => {
   const base = filteredSongs.value;
@@ -1276,22 +1446,22 @@ const sortedSongs = computed(() => {
   });
 });
 
-const saveToLocal = (key, value) => {
+function saveToLocal(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
     console.warn(e);
   }
-};
+}
 
-const loadFromLocal = (key, fallback) => {
+function loadFromLocal(key, fallback) {
   try {
     const v = localStorage.getItem(key);
     return v ? JSON.parse(v) : fallback;
   } catch (e) {
     return fallback;
   }
-};
+}
 
 const visibleColumns = ref(
   loadFromLocal("visibleColumns", [
@@ -1304,6 +1474,7 @@ const visibleColumns = ref(
 );
 
 watch(visibleColumns, (v) => saveToLocal("visibleColumns", v), { deep: true });
+watch(activeView, (v) => saveToLocal("activeView", v));
 
 let draggedIndex = null;
 
@@ -1326,6 +1497,9 @@ onMounted(async () => {
   window.addEventListener("resize", () => {
     windowWidth.value = window.innerWidth;
   });
+  if (savedView && libraryNav.value.some((i) => i.name === savedView)) {
+    setActive(savedView);
+  }
   await fetchAlbums();
   const all = [];
   const api = getApiBase();
