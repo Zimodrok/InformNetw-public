@@ -307,22 +307,28 @@
                   fill-opacity="0.85"
                 />
               </svg>
+              <div
+                class="absolute inset-0 flex items-center px-10 space-x-2 pointer-events-none text-white/80"
+              >
+                <template v-if="!displayTokens.length">
+                  <span class="text-stone-500 dark:text-stone-300">Find in Albums</span>
+                </template>
+                <template v-else>
+                  <span
+                    v-for="(t, idx) in displayTokens"
+                    :key="idx"
+                    :class="t.class"
+                    class="text-base"
+                  >
+                    {{ t.text }}
+                  </span>
+                </template>
+              </div>
               <input
                 type="text"
-                placeholder="Find in Albums"
                 v-model="searchQuery"
-                class="dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none w-48 py-2 bg-stone-200 dark:bg-stone-700 text-stone-900 rounded-2xl"
+                class="dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none w-48 py-2 bg-stone-200 dark:bg-stone-700 text-transparent caret-white rounded-2xl"
               />
-            </div>
-            <div v-if="tagBadges.length" class="flex flex-wrap gap-2 mt-2">
-              <span
-                v-for="(chip, idx) in tagBadges"
-                :key="idx"
-                class="px-2 py-1 text-xs rounded-full border"
-                :class="chip.class"
-              >
-                {{ chip.label }}
-              </span>
             </div>
           </div>
 
@@ -351,7 +357,7 @@
                 multiple
                 accept="audio/flac,.flac,.FLAC,audio/x-flac"
                 style="display: none"
-                @change="processFiles"
+                @change="handleFiles"
               />
             </form>
 
@@ -1341,23 +1347,23 @@ const filteredSongs = computed(() => {
   return results;
 });
 
-const tagBadges = computed(() => {
-  const tags = parseSearch(searchQuery.value);
-  const chips = [];
-  const pushChips = (arr, kind, cls) => {
-    arr.forEach((t) =>
-      chips.push({
-        label: `${kind}:${t}`,
-        class: cls,
-      }),
-    );
-  };
-  pushChips(tags.album, "album", "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200 border-red-300 dark:border-red-700");
-  pushChips(tags.artist, "artist", "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200 border-purple-300 dark:border-purple-700");
-  pushChips(tags.genre, "genre", "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200 border-green-300 dark:border-green-700");
-  pushChips(tags.song, "song", "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200 border-blue-300 dark:border-blue-700");
-  pushChips(tags.text, "text", "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-200 border-stone-300 dark:border-stone-700");
-  return chips;
+const displayTokens = computed(() => {
+  const tokens = searchQuery.value.split(/\s+/).filter(Boolean);
+  return tokens.map((t) => {
+    const m = t.match(/^(album|artist|genre|song|text):(.+)$/i);
+    if (!m || !m[2]) {
+      return { text: t, class: "text-transparent" };
+    }
+    const kind = m[1].toLowerCase();
+    const palette = {
+      album: "text-red-400",
+      artist: "text-purple-300",
+      genre: "text-green-300",
+      song: "text-blue-300",
+      text: "text-amber-300",
+    };
+    return { text: t, class: palette[kind] || "text-stone-200" };
+  });
 });
 const sortedSongs = computed(() => {
   const base = filteredSongs.value;
