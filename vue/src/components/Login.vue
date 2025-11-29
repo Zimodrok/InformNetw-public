@@ -1009,11 +1009,6 @@ export default {
         if (!res.ok || !data.connected) {
           this.loginError =
             data.details || data.error || "SFTP connection failed";
-          this.showInitServer = true;
-          this.initServerHighlight = true;
-          setTimeout(() => {
-            this.initServerHighlight = false;
-          }, 2000);
           setTimeout(() => (this.loginError = ""), 4000);
           return false;
         }
