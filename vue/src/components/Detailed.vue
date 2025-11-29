@@ -178,10 +178,10 @@
                 </div>
               </div>
               <label
-                class="relative h-full flex items-center whitespace-nowrap overflow-hidden w-56 md:w-[18rem] lg:w-[22rem] px-2 dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none bg-stone-200 dark:bg-stone-700 text-transparent caret-white rounded-2xl"
+                class="relative h-full flex items-center whitespace-nowrap overflow-hidden w-56 md:w-[18rem] lg:w-[22rem] px-2 min-h-[2.75rem] dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none bg-stone-200 dark:bg-stone-700 text-transparent caret-white rounded-2xl"
               >
                 <div
-                  class="absolute inset-0 flex items-center px-3 space-x-2 pointer-events-none text-white/80 overflow-hidden"
+                  class="absolute inset-0 flex items-center px-3 space-x-2 pointer-events-none text-white/80 overflow-hidden z-10"
                 >
                   <template v-if="!displayTokens.length">
                     <span class="text-stone-500 dark:text-stone-300"
@@ -212,12 +212,12 @@
                 <input
                   type="text"
                   v-model="searchQuery"
-                  class="absolute inset-0 w-full h-full bg-transparent border-none outline-none text-transparent caret-white"
+                  class="absolute inset-0 w-full h-full bg-transparent border-none outline-none text-transparent caret-white z-0"
                 />
               </label>
             </div>
           </div>
-          <div class="max-w-5xl mx-16 py-8 pt-20 overflow-y-scroll">
+          <div class="max-w-5xl mx-16 py-8 pt-20">
             <div v-if="loading" class="text-center text-zinc-500">
               Loading...
             </div>
