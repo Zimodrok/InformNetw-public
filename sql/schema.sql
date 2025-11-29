@@ -347,7 +347,9 @@ CREATE TABLE public.users (
     is_admin boolean DEFAULT false,
     first_name text,
     last_name text,
-    email text
+    email text,
+    library_path text,
+    server_ip text
 );
 
 
@@ -655,4 +657,3 @@ GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.user_sftp TO music_app_user;
 --
 
 \unrestrict 4xGUX3unkqDzdE2DKeSqfqC8ubNhpepieEIGVWT5GUW3BeAN5SHU0uN84SJQFyb
-
