@@ -220,9 +220,9 @@
                 >
                   {{ release.artist || fallbackArtist(release) }}
                 </span>
-                <span class="flex-shrink-0">
-                  • {{ release.year || "Unknown year" }}
-                </span>
+              <span class="flex-shrink-0">
+                • {{ release.year && release.year !== 0 ? release.year : "Unknown year" }}
+              </span>
               </div>
             </div>
           </button>

@@ -159,7 +159,7 @@ func extractMetadataFromReader(r io.Reader, flacName string) (
 ) {
 	stream, err := flac.Parse(r)
 	if err != nil {
-		return flacName, "Unknown Album", "Unknown Genre", "Unknown Artist", "Unknown Year", "", "", ""
+		return flacName, "Unknown Album", "Unknown Genre", "Unknown Artist", "0", "", "", ""
 	}
 
 	for _, block := range stream.Blocks {
@@ -218,7 +218,7 @@ func extractMetadataFromReader(r io.Reader, flacName string) (
 		artist = "Unknown Artist"
 	}
 	if date == "" {
-		date = "Unknown Year"
+		date = "0"
 	}
 	if copyright == "" {
 		copyright = "Unknown legal owner, refer to " + artist
