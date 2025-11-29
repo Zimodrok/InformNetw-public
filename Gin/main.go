@@ -984,8 +984,12 @@ func main() {
 		portsConfig.SFTPPort = 9824
 	}
 
-	consumerKey = os.Getenv("DISCOGS_KEY")
-	consumerSecret = os.Getenv("DISCOGS_SECRET")
+	if key := os.Getenv("DISCOGS_KEY"); key != "" {
+		consumerKey = key
+	}
+	if secret := os.Getenv("DISCOGS_SECRET"); secret != "" {
+		consumerSecret = secret
+	}
 	databaseURL := getEnv("DATABASE_URL", portsConfig.DBURL)
 	if databaseURL == "" || strings.Contains(databaseURL, "musicuser") {
 		initLocalDBIfNeeded()
