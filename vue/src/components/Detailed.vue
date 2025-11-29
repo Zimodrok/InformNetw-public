@@ -398,7 +398,7 @@
       <input
         v-model="metadata.artist"
         type="text"
-        class="w-full mb-4 px-3 py-2 rounded border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-neutral-800 text-stone-900 dark:text-stone-200"
+        class="w-full mb-4 px-3 py-2 rounded border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-neutral-700 text-stone-900 dark:text-stone-200"
       />
 
       <label class="block mb-2 text-stone-700 dark:text-stone-200">Genre</label>

@@ -1,49 +1,89 @@
-<!DOCTYPE html>
-<html lang="en" class="bg-white dark:bg-zinc-950 text-gray-800 dark:text-zinc-100">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FlacLibrary – Features</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    /* Tailwind’s typography plugin style if needed */
-    .prose p { @apply mb-4 leading-relaxed; }
-    .prose h1, .prose h2, .prose h3 { @apply font-semibold mb-3; }
-    .prose code { @apply bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-sm; }
-    .prose pre { @apply bg-zinc-900 text-zinc-100 p-3 rounded-lg overflow-auto; }
-  </style>
-</head>
+<!doctype html>
+<html
+  lang="en"
+  class="bg-white dark:bg-zinc-950 text-gray-800 dark:text-zinc-100"
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FlacLibrary – Features</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Tailwind’s typography plugin style if needed */
+      .prose p {
+        @apply mb-4 leading-relaxed;
+      }
+      .prose h1,
+      .prose h2,
+      .prose h3 {
+        @apply font-semibold mb-3;
+      }
+      .prose code {
+        @apply bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-sm;
+      }
+      .prose pre {
+        @apply bg-zinc-900 text-zinc-100 p-3 rounded-lg overflow-auto;
+      }
+    </style>
+  </head>
 
-<body class="antialiased min-h-screen flex flex-col">
-  <header class="px-8 py-6 flex justify-between items-center border-b border-zinc-200 dark:border-zinc-800">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center">
-        <svg class="w-5 h-5 text-white dark:text-zinc-900" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-        </svg>
+  <body class="antialiased min-h-screen flex flex-col">
+    <header
+      class="px-8 py-6 flex justify-between items-center border-b border-zinc-200 dark:border-zinc-800"
+    >
+      <div class="flex items-center gap-3">
+        <div
+          class="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center"
+        >
+          <svg
+            class="w-5 h-5 text-white dark:text-zinc-900"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+            />
+          </svg>
+        </div>
+        <span class="font-semibold text-lg">FlacLibrary</span>
       </div>
-      <span class="font-semibold text-lg">FlacLibrary</span>
-    </div>
-    <nav class="flex gap-8 text-sm">
-      <a href="/" class="hover:underline hover:text-zinc-900 dark:hover:text-zinc-100">Home</a>
-      <a href="/features.html" class="text-zinc-900 dark:text-zinc-100 font-medium underline">Features</a>
-      <a href="/download.html" class="hover:underline hover:text-zinc-900 dark:hover:text-zinc-100">Download</a>
-    </nav>
-  </header>
+      <nav class="flex gap-8 text-sm">
+        <a
+          href="/"
+          class="hover:underline hover:text-zinc-900 dark:hover:text-zinc-100"
+          >Home</a
+        >
+        <a
+          href="/features.html"
+          class="text-zinc-900 dark:text-zinc-100 font-medium underline"
+          >Features</a
+        >
+        <a
+          href="/download.html"
+          class="hover:underline hover:text-zinc-900 dark:hover:text-zinc-100"
+          >Download</a
+        >
+      </nav>
+    </header>
 
-  <main class="flex-1 max-w-3xl mx-auto px-6 py-12">
-    <article id="markdown-content" class="prose dark:prose-invert max-w-none"></article>
-  </main>
+    <main class="flex-1 max-w-3xl mx-auto px-6 py-12">
+      <article
+        id="markdown-content"
+        class="prose dark:prose-invert max-w-none"
+      ></article>
+    </main>
 
-  <footer class="py-6 text-center text-sm text-zinc-500 dark:text-zinc-400 border-t border-zinc-200 dark:border-zinc-800">
-    © 2025 FlacLibrary. All rights reserved.
-  </footer>
+    <footer
+      class="py-6 text-center text-sm text-zinc-500 dark:text-zinc-400 border-t border-zinc-200 dark:border-zinc-800"
+    >
+      © 2025 FlacLibrary. All rights reserved.
+    </footer>
 
-  <!-- Markdown Renderer -->
-  <script type="module">
-    import { marked } from "https://cdn.jsdelivr.net/npm/marked@12.0.1/lib/marked.esm.js";
+    <!-- Markdown Renderer -->
+    <script type="module">
+      import { marked } from "https://cdn.jsdelivr.net/npm/marked@12.0.1/lib/marked.esm.js";
 
-    const markdown = `
+      const markdown = `
 # **Technical Specification (TS) for “Music Library” Web Application**
 
 ## **1. General Information**
@@ -197,7 +237,8 @@
 ---
 `;
 
-    document.getElementById("markdown-content").innerHTML = marked.parse(markdown);
-  </script>
-</body>
+      document.getElementById("markdown-content").innerHTML =
+        marked.parse(markdown);
+    </script>
+  </body>
 </html>

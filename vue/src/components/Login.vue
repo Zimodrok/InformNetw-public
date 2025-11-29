@@ -43,9 +43,9 @@
             >Features</a
           >
           <a
-            href="/pXU7HmG55XXJp8D1Athb#download"
+            href="https://github.com/Zimodrok/InformNetw-public"
             class="hover:text-neutral-900 dark:hover:text-neutral-100 dark:text-neutral-300 transition-colors"
-            >Download</a
+            >Project Page</a
           >
           <button
             v-if="showInitServer"
@@ -362,7 +362,9 @@
               placeholder="Password"
               class="input-field bg-white dark:bg-neutral-700 dark:text-neutral-100 text-neutral-900"
             />
-            <label class="flex items-center space-x-2 text-sm text-neutral-600 dark:text-neutral-300">
+            <label
+              class="flex items-center space-x-2 text-sm text-neutral-600 dark:text-neutral-300"
+            >
               <input
                 type="checkbox"
                 v-model="loginForm.rememberMe"
