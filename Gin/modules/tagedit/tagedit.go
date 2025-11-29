@@ -343,7 +343,7 @@ func UpdateSongMetadata(c *gin.Context) {
 		Name      string
 		Genre     string
 		Subgenres string
-		Year      int
+		Year      sql.NullInt64
 		Comment   string
 		CoverBase string
 		Copyright string
@@ -395,7 +395,10 @@ func UpdateSongMetadata(c *gin.Context) {
 		subToStore = existing.Subgenres
 	}
 
-	yearToStore := existing.Year
+	yearToStore := 0
+	if existing.Year.Valid {
+		yearToStore = int(existing.Year.Int64)
+	}
 	if req.Year != 0 {
 		yearToStore = req.Year
 	}
