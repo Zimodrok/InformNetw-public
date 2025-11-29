@@ -15,6 +15,17 @@ export function getApiBase(): string {
 
   const host = window.location.hostname || "localhost";
   const protocol = window.location.protocol || "http:";
+  const currentPort = window.location.port;
+
+  // If we're being served from the frontend port, the API is expected to be one
+  // port below (backend serves dist and API). Prefer that immediately so calls
+  // never hit the frontend first.
+  if (currentPort) {
+    const p = parseInt(currentPort, 10);
+    if (!isNaN(p) && p > 0) {
+      return `${protocol}//${host}:${p - 1}`;
+    }
+  }
 
   const cfg = window.__MUSICAPP_CONFIG;
   if (cfg && cfg.api_port) return `${protocol}//${host}:${cfg.api_port}`;
