@@ -307,39 +307,42 @@
                   fill-opacity="0.85"
                 />
               </svg>
-              <label class="relative w-full h-full flex-1">
+              <label
+                class="relative h-full flex-1 whitespace-nowrap w-80 md:w-[30rem] dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none bg-stone-200 dark:bg-stone-700 text-transparent caret-white rounded-2xl"
+              >
                 <div
                   class="absolute inset-0 flex items-center px-4 space-x-2 pointer-events-none text-white/80"
-                >
-                  <template v-if="!displayTokens.length">
-                    <span class="text-stone-500 dark:text-stone-300">Find in Albums</span>
-                  </template>
-                  <template v-else>
-                    <span
-                      v-for="(t, idx) in displayTokens"
-                      :key="idx"
-                      class="flex items-center space-x-2 text-base"
-                    >
-                      <template v-if="t.isTag && t.value">
-                        <span
-                          class="rounded-2xl px-2 py-0.5 text-sm font-semibold"
-                          :class="t.class"
-                        >
-                          {{ t.label }}
-                        </span>
-                        <span class="text-white">{{ t.value }}</span>
-                      </template>
-                      <template v-else>
-                        <span :class="t.class">{{ t.value || t.raw }}</span>
-                      </template>
-                    </span>
-                  </template>
-                </div>
+                ></div>
                 <input
                   type="text"
                   v-model="searchQuery"
                   class="absolute inset-0 w-full h-full bg-transparent border-none outline-none text-transparent caret-white"
                 />
+                <template v-if="!displayTokens.length">
+                  <span class="text-stone-500 dark:text-stone-300"
+                    >Find in Albums</span
+                  >
+                </template>
+                <template v-else>
+                  <span
+                    v-for="(t, idx) in displayTokens"
+                    :key="idx"
+                    class="flex items-center space-x-2 text-base"
+                  >
+                    <template v-if="t.isTag && t.value">
+                      <span
+                        class="rounded-2xl px-2 py-0.5 text-sm font-semibold"
+                        :class="t.class"
+                      >
+                        {{ t.label }}
+                      </span>
+                      <span class="text-white">{{ t.value }}</span>
+                    </template>
+                    <template v-else>
+                      <span :class="t.class">{{ t.value || t.raw }}</span>
+                    </template>
+                  </span>
+                </template>
               </label>
             </div>
           </div>
