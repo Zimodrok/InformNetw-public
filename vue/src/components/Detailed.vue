@@ -497,11 +497,13 @@
 import { ref, nextTick, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getApiBase } from "../apiBase";
-const isOpen = ref(false);
 import ReleaseModal from "./ReleaseModal.vue";
+import { usePlayer } from "../player/usePlayer";
 
 const route = useRoute();
 const router = useRouter();
+const player = usePlayer();
+const isOpen = ref(false);
 const album = ref({});
 const searchQuery = ref("");
 const showMenu = ref(false);
@@ -522,11 +524,54 @@ const selectedTrackIndex = ref(0);
 const checkedTags = ref({ albumCover: true, overwrite: false });
 const matchMethod = ref("auto");
 const selectedDiscogsCoverUrl = ref("");
-import { usePlayer } from "../player/usePlayer";
 
-const player = usePlayer();
 function goToLibraryView(view) {
   router.push({ path: "/library", query: { view } });
+}
+
+// Tag helpers
+function parseSearch(query) {
+  const tags = { artist: [], album: [], genre: [], song: [], text: [] };
+  if (!query) return tags;
+  query
+    .split(/\s+/)
+    .filter(Boolean)
+    .forEach((token) => {
+      const lower = token.toLowerCase();
+      if (lower.startsWith("artist:")) tags.artist.push(lower.slice(7));
+      else if (lower.startsWith("album:")) tags.album.push(lower.slice(6));
+      else if (lower.startsWith("genre:")) tags.genre.push(lower.slice(6));
+      else if (lower.startsWith("song:")) tags.song.push(lower.slice(5));
+      else tags.text.push(lower);
+    });
+  return tags;
+}
+
+const displayTokens = computed(() => {
+  const tokens = searchQuery.value.split(/\s+/).filter(Boolean);
+  return tokens.map((raw) => {
+    const m = raw.match(/^(album|artist|genre|song|text):(.*)$/i);
+    if (!m) return { raw, value: raw, isTag: false, class: "text-white" };
+    const kind = m[1].toLowerCase();
+    const val = (m[2] || "").trim();
+    const palette = {
+      album: "bg-red-800/60 text-red-100 border border-red-500/60",
+      artist: "bg-purple-800/60 text-purple-100 border border-purple-500/60",
+      genre: "bg-green-800/60 text-green-100 border border-green-500/60",
+      song: "bg-blue-800/60 text-blue-100 border border-blue-500/60",
+      text: "bg-amber-800/60 text-amber-100 border border-amber-500/60",
+    };
+    const cls =
+      palette[kind] || "bg-stone-700 text-stone-100 border border-stone-500/60";
+    return {
+      raw,
+      label: kind,
+      value: val,
+      isTag: val.length > 0,
+      class: cls,
+    };
+  });
+});
 
 function toPlayerTrack(song) {
   return {
