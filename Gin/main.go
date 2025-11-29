@@ -388,6 +388,10 @@ func initLocalDBIfNeeded() {
 			break
 		}
 	}
+
+	// Ensure columns exist even if schema import was skipped/old.
+	run(psql, "-d", "musicapp", "-c", "ALTER TABLE users ADD COLUMN IF NOT EXISTS library_path text;")
+	run(psql, "-d", "musicapp", "-c", "ALTER TABLE users ADD COLUMN IF NOT EXISTS server_ip text;")
 }
 
 func tryStartPostgresService() {
