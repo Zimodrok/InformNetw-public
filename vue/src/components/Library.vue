@@ -307,38 +307,40 @@
                   fill-opacity="0.85"
                 />
               </svg>
-              <div
-                class="absolute inset-0 flex items-center px-10 space-x-2 pointer-events-none text-white/80"
-              >
-                <template v-if="!displayTokens.length">
-                  <span class="text-stone-500 dark:text-stone-300">Find in Albums</span>
-                </template>
-                <template v-else>
-                  <span
-                    v-for="(t, idx) in displayTokens"
-                    :key="idx"
-                    class="flex items-center space-x-2 text-base"
-                  >
-                    <template v-if="t.isTag && t.value">
-                      <span
-                        class="rounded-2xl px-2 py-0.5 text-sm font-semibold"
-                        :class="t.class"
-                      >
-                        {{ t.label }}
-                      </span>
-                      <span class="text-white">{{ t.value }}</span>
-                    </template>
-                    <template v-else>
-                      <span :class="t.class">{{ t.value || t.raw }}</span>
-                    </template>
-                  </span>
-                </template>
-              </div>
-              <input
-                type="text"
-                v-model="searchQuery"
-                class="dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none w-48 py-2 bg-stone-200 dark:bg-stone-700 text-transparent caret-white rounded-2xl"
-              />
+              <label class="relative w-full h-full flex-1">
+                <div
+                  class="absolute inset-0 flex items-center px-4 space-x-2 pointer-events-none text-white/80"
+                >
+                  <template v-if="!displayTokens.length">
+                    <span class="text-stone-500 dark:text-stone-300">Find in Albums</span>
+                  </template>
+                  <template v-else>
+                    <span
+                      v-for="(t, idx) in displayTokens"
+                      :key="idx"
+                      class="flex items-center space-x-2 text-base"
+                    >
+                      <template v-if="t.isTag && t.value">
+                        <span
+                          class="rounded-2xl px-2 py-0.5 text-sm font-semibold"
+                          :class="t.class"
+                        >
+                          {{ t.label }}
+                        </span>
+                        <span class="text-white">{{ t.value }}</span>
+                      </template>
+                      <template v-else>
+                        <span :class="t.class">{{ t.value || t.raw }}</span>
+                      </template>
+                    </span>
+                  </template>
+                </div>
+                <input
+                  type="text"
+                  v-model="searchQuery"
+                  class="absolute inset-0 w-full h-full bg-transparent border-none outline-none text-transparent caret-white"
+                />
+              </label>
             </div>
           </div>
 
@@ -1373,7 +1375,8 @@ const displayTokens = computed(() => {
       song: "bg-blue-800/60 text-blue-100 border border-blue-500/60",
       text: "bg-amber-800/60 text-amber-100 border border-amber-500/60",
     };
-    const cls = palette[kind] || "bg-stone-700 text-stone-100 border border-stone-500/60";
+    const cls =
+      palette[kind] || "bg-stone-700 text-stone-100 border border-stone-500/60";
     return {
       raw,
       label: kind,
