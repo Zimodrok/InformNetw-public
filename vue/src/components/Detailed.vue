@@ -705,8 +705,9 @@ async function fetchDiscogsMatches() {
   }
 
   try {
+    const api = getApiBase();
     const res = await fetch(
-      `/api/discogs/search?artist=${encodeURIComponent(
+      `${api}/api/discogs/search?artist=${encodeURIComponent(
         artist,
       )}&album=${encodeURIComponent(title)}`,
       { credentials: "include" },
