@@ -262,7 +262,7 @@
         <!-- Main content -->
         <div class="flex-1 flex flex-col relative h-screen">
           <div
-            class="relative md:absolute flex items-center justify-between h-[4rem] max-w-screen top-0 left-0 right-0 z-20 px-6 py-4 bg-[linear-gradient(to_bottom,rgba(var(--bg),1)_0%,rgba(var(--bg),1)_40%,rgba(var(--bg),0.9)_55%,rgba(var(--bg),0.93)_70%,rgba(var(--bg),1)_100%)] backdrop-blur-sm dark:[--bg:0,0,0] [--bg:241,241,241]"
+            class="relative md:absolute flex items-center justify-between h-[4rem] max-w-screen top-0 left-0 right-0 z-40 px-6 py-4 bg-[linear-gradient(to_bottom,rgba(var(--bg),1)_0%,rgba(var(--bg),1)_40%,rgba(var(--bg),0.9)_55%,rgba(var(--bg),0.93)_70%,rgba(var(--bg),1)_100%)] backdrop-blur-sm dark:[--bg:0,0,0] [--bg:241,241,241]"
           >
             <p
               v-if="activeView === 'Recently Added'"
@@ -318,7 +318,7 @@
 
           <!-- Dropzone -->
           <div
-            class="library-dropzone w-full h-full z-[60]"
+            class="library-dropzone w-full h-full z-50"
             @dragover.prevent="onDragOver"
             @dragenter.prevent="onDragEnter"
             @dragleave.prevent="onDragLeave"
