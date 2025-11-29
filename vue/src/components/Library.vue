@@ -195,7 +195,7 @@
           </div>
           <div
             v-if="activeView === 'Artists'"
-            class="md:py-[2rem] h-20 md:h-[30rem] border-2 border-dashed border-stone-500 hover:border-slate-700 transition-colors bg-slate-100 text-stone-800 dark:bg-slate-900 dark:text-stone-400 rounded-3xl m-2 mx-1 xl:mx-6 ml-1 mr-3 md:ml-2 md:mr-0 overflow-x-auto overflow-y-scroll"
+            class="md:py-[2rem] h-20 md:h-[30rem] border-2 border-dashed border-stone-500 hover:border-neutral-700 transition-colors bg-neutral-100 text-stone-800 dark:bg-neutral-900 dark:text-stone-400 rounded-3xl m-2 mx-1 xl:mx-6 md:ml-1 md:mr-2 overflow-x-auto overflow-y-scroll"
             style="scrollbar-width: none"
           >
             <!-- Alphabet quick jump for artists -->
@@ -227,7 +227,7 @@
           </div>
           <div
             v-if="activeView === 'Genres'"
-            class="md:py-[2rem] h-20 md:h-[30rem] border-2 border-dashed border-stone-500 hover:border-slate-700 transition-colors bg-slate-100 text-stone-800 dark:bg-slate-900 dark:text-stone-400 rounded-3xl m-2 mx-1 xl:mx-6 ml-1 mr-3 md:ml-2 md:mr-0 overflow-x-auto md:overflow-y-scroll"
+            class="md:py-[2rem] h-20 md:h-[30rem] border-2 border-dashed border-stone-500 hover:border-neutral-700 transition-colors bg-neutral-100 text-stone-800 dark:bg-neutral-900 dark:text-stone-400 rounded-3xl m-2 mx-1 xl:mx-6 md:ml-1 md:mr-2 overflow-x-auto overflow-y-scroll"
             style="scrollbar-width: none"
           >
             <!-- Alphabet quick jump -->
@@ -318,7 +318,7 @@
 
           <!-- Dropzone -->
           <div
-            class="library-dropzone w-full h-full"
+            class="library-dropzone w-full h-full z-[60]"
             @dragover.prevent="onDragOver"
             @dragenter.prevent="onDragEnter"
             @dragleave.prevent="onDragLeave"
@@ -331,7 +331,17 @@
                 multiple
                 webkitdirectory
                 directory
+                accept="audio/flac,.flac,.FLAC"
+                style="display: none"
                 @change="handleFiles"
+              />
+              <input
+                ref="filepickerInput"
+                type="file"
+                multiple
+                accept="audio/flac,.flac,.FLAC,audio/x-flac"
+                style="display: none"
+                @change="processFiles"
               />
             </form>
 
@@ -660,7 +670,7 @@
                             >
                             <span
                               v-else
-                              class="inline-block transform rotate-180 translate-y-[2px]"
+                              class="inline-block transform rotate-180 translate-y-[0.125rem]"
                               >⇧</span
                             >
                           </span>
@@ -701,6 +711,8 @@
                             : '',
                         ]"
                       >
+                        //TODO: on albums song list add option to play songs,
+                        play all songs if so
                         <div
                           v-if="col.key !== 'duration'"
                           class="absolute px-4 py-2 inset-0 w-full overflow-hidden whitespace-nowrap text-ellipsis"
@@ -724,9 +736,10 @@
     <div
       v-if="uploadingSongs.length"
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-30"
+      @click.self="clearUploading"
     >
       <div
-        class="bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 w-[900px] max-h-[80vh] overflow-y-auto"
+        class="bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 w-[90vw] max-w-screen-xl max-h-[80vh] overflow-y-auto z-[60]"
       >
         <!-- Actions -->
         <div class="flex justify-end">
@@ -768,16 +781,14 @@
               Library Tree
             </h3>
             <!-- prettier-ignore -->
-            <pre
-              class="p-3 bg-stone-100 dark:bg-stone-700 text-stone-900 dark:text-stone-200 rounded-lg text-sm font-mono overflow-auto h-full leading-tight whitespace-pre tracking-normal">
-          {{ uploadTree }}</pre>
+            <pre class="p-3 bg-stone-100 dark:bg-stone-700 text-stone-900 dark:text-stone-200 rounded-lg text-sm font-mono overflow-auto h-full leading-tight whitespace-pre tracking-normal">{{ uploadTree }}</pre>
           </div>
         </div>
       </div>
     </div>
     <div
       class="fixed bottom-4 right-4 z-50 w-14 h-14 flex items-center justify-center bg-stone-800 rounded-full shadow-lg hover:bg-stone-700 transition-colors cursor-help"
-      @click="showGuide(userId)"
+      @click="triggerFilePicker(userId)"
     >
       <div class="relative w-7 h-7">
         <div
@@ -813,6 +824,8 @@ const UploadGuide = ref(false);
 const uploadingSongs = ref([]);
 const selectedArtist = ref(null);
 const uploadTree = ref("");
+const fileInput = ref(null);
+const filepickerInput = ref(null);
 let progressInterval = null;
 
 const libraryNav = ref([
@@ -877,28 +890,65 @@ const fetchAlbums = async () => {
   }
 };
 
-const SortedAlbums = computed(() => {
-  if (!searchQuery.value) return albums.value;
+function parseSearch(query) {
+  const tags = {
+    artist: [],
+    album: [],
+    genre: [],
+    song: [],
+    text: [],
+  };
+  if (!query) return tags;
+  query
+    .split(/\s+/)
+    .filter(Boolean)
+    .forEach((token) => {
+      const lower = token.toLowerCase();
+      if (lower.startsWith("artist:")) tags.artist.push(lower.slice(7));
+      else if (lower.startsWith("album:")) tags.album.push(lower.slice(6));
+      else if (lower.startsWith("genre:")) tags.genre.push(lower.slice(6));
+      else if (lower.startsWith("song:")) tags.song.push(lower.slice(5));
+      else tags.text.push(lower);
+    });
+  return tags;
+}
 
-  const q = searchQuery.value.toLowerCase();
-  return albums.value.filter(
-    (a) =>
-      a.name.toLowerCase().includes(q) || a.artist.toLowerCase().includes(q),
-  );
-});
 const filteredAlbums = computed(() => {
-  if (activeView.value !== "Albums" || activeView.value !== "Recently Added")
+  if (!["Albums", "Recently Added"].includes(activeView.value))
     return albums.value;
-  if (!searchQuery.value) return albums.value;
 
-  const fuse = new Fuse(albums.value, {
-    keys: ["name", "artist"],
-    threshold: 0.4,
-  });
-  return fuse.search(searchQuery.value).map((r) => r.item);
+  const tags = parseSearch(searchQuery.value);
+  const hasTags =
+    tags.artist.length ||
+    tags.album.length ||
+    tags.genre.length ||
+    tags.text.length;
+  if (!hasTags) return albums.value;
+
+  const matches = (album) => {
+    const name = (album.name || "").toLowerCase();
+    const artist = (album.artist || "").toLowerCase();
+    const genre = (album.genre || "").toLowerCase();
+    if (tags.artist.length && !tags.artist.every((t) => artist.includes(t)))
+      return false;
+    if (tags.album.length && !tags.album.every((t) => name.includes(t)))
+      return false;
+    if (tags.genre.length && !tags.genre.every((t) => genre.includes(t)))
+      return false;
+    if (
+      tags.text.length &&
+      !tags.text.every(
+        (t) => name.includes(t) || artist.includes(t) || genre.includes(t),
+      )
+    )
+      return false;
+    return true;
+  };
+  return albums.value.filter(matches);
 });
 
-const activeView = ref("Albums");
+const savedView = loadFromLocal("activeView", "Albums");
+const activeView = ref(savedView || "Albums");
 
 const setActive = (viewName) => {
   libraryNav.value.forEach((i) => (i.active = i.name === viewName));
@@ -938,6 +988,11 @@ function hideUploadGuide(userId) {
   const key = `uploadGuideShown_${userId}`;
   UploadGuide.value = false;
   localStorage.setItem(key, "true");
+}
+
+function triggerFilePicker(userId) {
+  showGuide(userId);
+  filepickerInput.value.click();
 }
 
 function sortBy(key) {
@@ -1095,50 +1150,22 @@ const onDragLeave = (e) => {
   dragOver.value = false;
 };
 
-const handleDrop = async (e) => {
-  dragOver.value = false;
-  const items = e.dataTransfer?.items;
-  if (!items) return;
-
-  const files = [];
-  const traverseEntry = async (entry, path = "") => {
-    if (entry.isFile) {
-      await new Promise((resolve) => {
-        entry.file((file) => {
-          if (file.name.toLowerCase().endsWith(".flac")) {
-            file.relativePath = path + file.name;
-            files.push(file);
-          }
-          resolve();
-        });
-      });
-    } else if (entry.isDirectory) {
-      const reader = entry.createReader();
-      const entries = await new Promise((res) => reader.readEntries(res));
-      for (const subEntry of entries) {
-        await traverseEntry(subEntry, path + entry.name + "/");
-      }
-    }
-  };
-
-  for (const item of items) {
-    const entry = item.webkitGetAsEntry?.();
-    if (entry) await traverseEntry(entry);
-  }
-
-  if (!files.length) {
-    console.warn("No FLAC files found in dropped folder(s)");
+const uploadFiles = async (files) => {
+  const flacs = files.filter((f) =>
+    f.name.toLowerCase().trim().endsWith(".flac"),
+  );
+  if (!flacs.length) {
+    console.warn("No FLAC files found in selection/drop");
     return;
   }
-  uploadingSongs.value = [];
-  uploadingSongs.value = files.map((f) => ({
+  uploadingSongs.value = flacs.map((f) => ({
     artist: null,
     title: f.name.replace(/\.[^/.]+$/, ""),
     done: false,
   }));
 
   const formData = new FormData();
-  files.forEach((f) => formData.append("files[]", f));
+  flacs.forEach((f) => formData.append("files[]", f));
 
   startProgressPolling();
   const api = getApiBase();
@@ -1147,6 +1174,55 @@ const handleDrop = async (e) => {
     credentials: "include",
     body: formData,
   });
+};
+
+const handleDrop = async (e) => {
+  dragOver.value = false;
+  const items = e.dataTransfer?.items;
+  if (!items) return;
+
+  const entries = [];
+  for (const item of Array.from(items)) {
+    const entry = item.webkitGetAsEntry?.();
+    if (entry) entries.push(entry);
+  }
+  const files = [];
+  const traverseEntry = async (entry, path = "") => {
+    if (entry.isFile) {
+      await new Promise((resolve) => {
+        entry.file((file) => {
+          if (file) {
+            file.relativePath = path + file.name;
+            files.push(file);
+          }
+          resolve();
+        });
+      });
+    } else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      const subEntries = await new Promise((res) => reader.readEntries(res));
+      for (const subEntry of subEntries) {
+        await traverseEntry(subEntry, path + entry.name + "/");
+      }
+    }
+  };
+
+  for (const entry of entries) {
+    await traverseEntry(entry);
+  }
+
+  await uploadFiles(files);
+};
+
+const handleFiles = async (e) => {
+  const list = e.target.files;
+  if (!list || !list.length) return;
+  const files = Array.from(list).map((f) => {
+    const rel = f.webkitRelativePath || f.relativePath || f.name;
+    f.relativePath = rel;
+    return f;
+  });
+  await uploadFiles(files);
 };
 
 const groupedByGenre = computed(() => {
@@ -1196,11 +1272,23 @@ const fuse = computed(() => {
 const filteredGenres = computed(() => {
   if (!searchQuery.value) return [];
 
-  const fuse = new Fuse(albums.value, {
-    keys: ["genre"],
-    threshold: 0.15,
+  const tags = parseSearch(searchQuery.value);
+  const results = albums.value.filter((album) => {
+    const genre = (album.genre || "").toLowerCase();
+    const name = (album.name || "").toLowerCase();
+    const artist = (album.artist || "").toLowerCase();
+
+    if (tags.genre.length && !tags.genre.every((t) => genre.includes(t)))
+      return false;
+    if (
+      tags.text.length &&
+      !tags.text.every(
+        (t) => genre.includes(t) || name.includes(t) || artist.includes(t),
+      )
+    )
+      return false;
+    return true;
   });
-  const results = fuse.search(searchQuery.value).map((r) => r.item);
 
   const groups = {};
   results.forEach((album) => {
@@ -1213,13 +1301,36 @@ const filteredGenres = computed(() => {
 const filteredSongs = computed(() => {
   if (!searchQuery.value) return songs.value;
 
-  const fuse = new Fuse(songs.value, {
-    keys: ["title", "artist", "album", "genre"],
-    threshold: 0.2,
-    ignoreLocation: true,
+  const tags = parseSearch(searchQuery.value);
+  const results = songs.value.filter((song) => {
+    const title = (song.title || "").toLowerCase();
+    const artist = (song.artist || "").toLowerCase();
+    const album = (song.album || "").toLowerCase();
+    const genre = (song.genre || "").toLowerCase();
+
+    if (tags.song.length && !tags.song.every((t) => title.includes(t)))
+      return false;
+    if (tags.artist.length && !tags.artist.every((t) => artist.includes(t)))
+      return false;
+    if (tags.album.length && !tags.album.every((t) => album.includes(t)))
+      return false;
+    if (tags.genre.length && !tags.genre.every((t) => genre.includes(t)))
+      return false;
+    if (
+      tags.text.length &&
+      !tags.text.every(
+        (t) =>
+          title.includes(t) ||
+          artist.includes(t) ||
+          album.includes(t) ||
+          genre.includes(t),
+      )
+    )
+      return false;
+    return true;
   });
 
-  return fuse.search(searchQuery.value).map((r) => r.item);
+  return results;
 });
 const sortedSongs = computed(() => {
   const base = filteredSongs.value;
@@ -1232,22 +1343,22 @@ const sortedSongs = computed(() => {
   });
 });
 
-const saveToLocal = (key, value) => {
+function saveToLocal(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
     console.warn(e);
   }
-};
+}
 
-const loadFromLocal = (key, fallback) => {
+function loadFromLocal(key, fallback) {
   try {
     const v = localStorage.getItem(key);
     return v ? JSON.parse(v) : fallback;
   } catch (e) {
     return fallback;
   }
-};
+}
 
 const visibleColumns = ref(
   loadFromLocal("visibleColumns", [
@@ -1260,6 +1371,7 @@ const visibleColumns = ref(
 );
 
 watch(visibleColumns, (v) => saveToLocal("visibleColumns", v), { deep: true });
+watch(activeView, (v) => saveToLocal("activeView", v));
 
 let draggedIndex = null;
 
@@ -1282,6 +1394,9 @@ onMounted(async () => {
   window.addEventListener("resize", () => {
     windowWidth.value = window.innerWidth;
   });
+  if (savedView && libraryNav.value.some((i) => i.name === savedView)) {
+    setActive(savedView);
+  }
   await fetchAlbums();
   const all = [];
   const api = getApiBase();

@@ -338,13 +338,13 @@ func ensureGuestUser() (*sftpTools.User, error) {
 }
 
 func findPgBin() string {
-	candidates := []string{
+	paths := []string{
 		"/opt/homebrew/opt/postgresql@14/bin",
 		"/opt/homebrew/opt/postgresql/bin",
 		"/usr/local/opt/postgresql@14/bin",
 		"/usr/local/opt/postgresql/bin",
 	}
-	for _, dir := range candidates {
+	for _, dir := range paths {
 		if info, err := os.Stat(dir); err == nil && info.IsDir() {
 			return dir
 		}
@@ -967,8 +967,6 @@ func main() {
 	consumerKey = os.Getenv("DISCOGS_KEY")
 	consumerSecret = os.Getenv("DISCOGS_SECRET")
 	databaseURL := getEnv("DATABASE_URL", portsConfig.DBURL)
-
-	// Attempt local DB bootstrap if using defaults
 	if databaseURL == "" || strings.Contains(databaseURL, "musicuser") {
 		initLocalDBIfNeeded()
 	}
@@ -994,8 +992,6 @@ func main() {
 		origin := c.Request.Header.Get("Origin")
 		if origin != "" {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
-		} else {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		}
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, X-CSRF-Token")
@@ -1220,6 +1216,8 @@ func main() {
 			return
 		}
 
+		log.Printf("[sftp/creds] user=%d host=%s port=%d username=%s path=%s", user.ID, creds.Host, creds.Port, creds.Username, creds.Path)
+
 		addr := fmt.Sprintf("%s:%d", creds.Host, creds.Port)
 		config := &ssh.ClientConfig{
 			User:            creds.Username,
@@ -1280,6 +1278,7 @@ func main() {
 		c.JSON(200, gin.H{
 			"connected": true,
 			"status":    "ok",
+			"path":      creds.Path,
 		})
 	})
 
@@ -1327,11 +1326,7 @@ func main() {
 			LibraryPath     string `json:"libraryPath"`
 		}
 		if err := c.ShouldBindJSON(&form); err != nil {
-			log.Printf("[register] invalid payload: %v", err)
-			c.JSON(400, gin.H{
-				"error":   "Invalid payload",
-				"details": err.Error(),
-			})
+			c.JSON(400, gin.H{"error": "Invalid payload"})
 			return
 		}
 
@@ -1402,11 +1397,7 @@ func main() {
 
 			guestUser, err := ensureGuestUser()
 			if err != nil {
-				log.Printf("[login/guest] init guest failed: %v", err)
-				c.JSON(500, gin.H{
-					"error":   "Failed to initialize guest",
-					"details": err.Error(),
-				})
+				c.JSON(500, gin.H{"error": "Failed to initialize guest"})
 				return
 			}
 			sessionID := generateRandomSessionID()
@@ -1951,19 +1942,12 @@ ORDER BY um.uploaded_at DESC
 
 		treeStr := buildTreeString(tree)
 		// fmt.Println("TREE:", treeStr)
-		allDone := false
-		if len(progress) > 0 {
-			allDone = true
-			for _, s := range progress {
-				if !s.Done {
-					allDone = false
-					break
-				}
+		allDone := true
+		for _, s := range progress {
+			if !s.Done {
+				allDone = false
+				break
 			}
-		}
-
-		if progress == nil {
-			progress = []UploadStatus{}
 		}
 		c.JSON(200, gin.H{
 			"progress": progress,
@@ -2175,10 +2159,14 @@ ORDER BY um.uploaded_at DESC
 					continue
 				}
 
-				os.MkdirAll("./temp_uploads", 0755)
+				tempDir := filepath.Join(os.TempDir(), "musicapp_uploads")
+				if err := os.MkdirAll(tempDir, 0755); err != nil {
+					fmt.Printf("❌ Failed to create temp dir %s: %v\n", tempDir, err)
+					continue
+				}
 
-				localTempPath := fmt.Sprintf("./temp_uploads/u%d_%s", user.ID, s.FileName)
-				if err := os.WriteFile(localTempPath, s.Data, 0644); err != nil {
+				localTempPath := filepath.Join(tempDir, fmt.Sprintf("u%d_%s", user.ID, filepath.Base(s.FileName)))
+				if err := os.WriteFile(localTempPath, s.Data, 0600); err != nil {
 					fmt.Printf("❌ Failed to save temp file for SFTP %s: %v\n", s.FileName, err)
 				} else {
 					// fmt.Printf("[sftp] UploadToUserSFTP start user=%d local=%s filename=%s\n",
@@ -2188,7 +2176,7 @@ ORDER BY um.uploaded_at DESC
 						fmt.Printf("❌ SFTP upload failed user=%d file=%s err=%v\n",
 							user.ID, s.FileName, err)
 					} else {
-						// fmt.Printf("[sftp] ✅ UploadToUserSFTP done user=%d local=%s\n",
+						// fmt.Printf("[sftp]  UploadToUserSFTP done user=%d local=%s\n",
 						// 	user.ID, localTempPath)
 					}
 

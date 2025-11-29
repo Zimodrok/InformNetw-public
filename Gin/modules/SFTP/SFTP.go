@@ -31,7 +31,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func SetDB(d *sql.DB) { db = d }
+func SetDB(d *sql.DB)      { db = d }
 func SetDefaultPort(p int) { defaultSFTPPort = p }
 
 type SFTPCreds struct {
@@ -1075,7 +1075,7 @@ func EnsureRemoteDir(client *sftp.Client, remotePath string) error {
 }
 
 func UploadToUserSFTP(userID int, localPath, filename string) error {
-	log.Printf("[sftp] UploadToUserSFTP user=%d local=%s filename=%s\n", userID, localPath, filename)
+	// log.Printf("[sftp] UploadToUserSFTP user=%d local=%s filename=%s\n", userID, localPath, filename)
 
 	creds, err := GetUserSFTPCredsFromDB(userID)
 	if err != nil {
@@ -1083,10 +1083,10 @@ func UploadToUserSFTP(userID int, localPath, filename string) error {
 		return fmt.Errorf("no creds: %w", err)
 	}
 
-	log.Printf(
-		"[sftp] creds for user=%d host=%s port=%d user=%s path=%s\n",
-		userID, creds.Host, creds.Port, creds.Username, creds.Path,
-	)
+	// log.Printf(
+	// 	"[sftp] creds for user=%d host=%s port=%d user=%s path=%s\n",
+	// 	userID, creds.Host, creds.Port, creds.Username, creds.Path,
+	// )
 
 	config := &ssh.ClientConfig{
 		User:            creds.Username,
@@ -1096,13 +1096,13 @@ func UploadToUserSFTP(userID int, localPath, filename string) error {
 	}
 
 	addr := fmt.Sprintf("%s:%d", creds.Host, creds.Port)
-	log.Printf("[sftp] ssh.Dial addr=%s\n", addr)
+	// log.Printf("[sftp] ssh.Dial addr=%s\n", addr)
 	conn, err := ssh.Dial("tcp", addr, config)
 	if err != nil {
 		log.Printf("[sftp] ssh.Dial FAILED addr=%s err=%v\n", addr, err)
 		return fmt.Errorf("ssh dial: %w", err)
 	}
-	log.Printf("[sftp] ssh.Dial OK addr=%s\n", addr)
+	// log.Printf("[sftp] ssh.Dial OK addr=%s\n", addr)
 	defer conn.Close()
 
 	sftpClient, err := sftp.NewClient(conn)
@@ -1110,17 +1110,17 @@ func UploadToUserSFTP(userID int, localPath, filename string) error {
 		log.Printf("[sftp] sftp.NewClient FAILED: %v\n", err)
 		return fmt.Errorf("sftp client: %w", err)
 	}
-	log.Printf("[sftp] sftp.NewClient OK\n")
+	// log.Printf("[sftp] sftp.NewClient OK\n")
 	defer sftpClient.Close()
 
-	log.Printf("[sftp] EnsureRemoteDir base=%s\n", creds.Path)
+	// log.Printf("[sftp] EnsureRemoteDir base=%s\n", creds.Path)
 	if err := EnsureRemoteDir(sftpClient, creds.Path); err != nil {
 		log.Printf("[sftp] EnsureRemoteDir FAILED: %v\n", err)
 		return fmt.Errorf("ensure remote dir: %w", err)
 	}
 
 	remoteFilePath := path.Join(creds.Path, filename)
-	log.Printf("[sftp] remoteFilePath=%s\n", remoteFilePath)
+	// log.Printf("[sftp] remoteFilePath=%s\n", remoteFilePath)
 
 	src, err := os.Open(localPath)
 	if err != nil {
