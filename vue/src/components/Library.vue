@@ -308,10 +308,10 @@
                 />
               </svg>
               <label
-                class="relative h-full flex-1 whitespace-nowrap w-80 md:w-[30rem] dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none bg-stone-200 dark:bg-stone-700 text-transparent caret-white rounded-2xl"
+                class="relative h-full flex-1 whitespace-nowrap overflow-hidden w-64 md:w-[24rem] lg:w-[28rem] dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none bg-stone-200 dark:bg-stone-700 text-transparent caret-white rounded-2xl"
               >
                 <div
-                  class="absolute inset-0 flex items-center px-4 space-x-2 pointer-events-none text-white/80"
+                  class="absolute inset-0 flex items-center px-4 space-x-2 pointer-events-none text-white/80 overflow-hidden"
                 ></div>
                 <input
                   type="text"
