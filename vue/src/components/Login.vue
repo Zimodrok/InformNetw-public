@@ -535,7 +535,6 @@
 
 <script>
 import { getApiBase, getPortsConfig } from "../apiBase";
-const api = getApiBase();
 export default {
   name: "Auth",
   data() {
@@ -654,6 +653,7 @@ export default {
       }
     },
     async submitSftpCreds() {
+      const api = getApiBase();
       const parsed = this.parseHost(this.hostInput);
       if (!parsed.host || !parsed.port) {
         this.error = "Invalid host (use host:port)";
