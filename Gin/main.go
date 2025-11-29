@@ -758,8 +758,8 @@ func generateRandomSessionID() string {
 	return hex.EncodeToString(b)
 }
 
-var consumerKey = ""
-var consumerSecret = ""
+var consumerKey = "VUOxAzdEicDBOftGbPyW"
+var consumerSecret = "ORrKNsJuKlUOzemlXjdMiYfpGNLoisoi"
 
 func SearchReleases(artist, album string) ([]map[string]interface{}, error) {
 	strictResults, err := searchStrict(artist, album)
