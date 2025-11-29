@@ -934,7 +934,9 @@ func loadPortsConfig() (PortsConfig, error) {
 		}
 	}
 	if cfg.DBURL == "" {
-		cfg.DBURL = "postgres://musicuser:musicuser@localhost/musicdb?sslmode=disable"
+		cfg.DBURL = "postgres://musicuser:musicuser@localhost/musicapp?sslmode=disable"
+	} else if strings.Contains(cfg.DBURL, "musicdb") {
+		cfg.DBURL = strings.Replace(cfg.DBURL, "musicdb", "musicapp", 1)
 	}
 
 	if data, err := json.MarshalIndent(cfg, "", "  "); err == nil {
