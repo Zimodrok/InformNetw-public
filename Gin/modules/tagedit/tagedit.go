@@ -9,7 +9,9 @@ import (
 	"mime"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -61,6 +63,57 @@ func FetchImageAsBase64(url string) (string, error) {
 
 	b64 := base64.StdEncoding.EncodeToString(data)
 	return fmt.Sprintf("data:%s;base64,%s", contentType, b64), nil
+}
+
+func embedCoverInFlac(flacPath string, dataURL string) error {
+	if strings.TrimSpace(dataURL) == "" {
+		return nil
+	}
+	// Expect data URL: data:<mime>;base64,<payload>
+	parts := strings.SplitN(dataURL, ",", 2)
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid data url")
+	}
+	payload := parts[1]
+	mimeType := "image/jpeg"
+	if strings.HasPrefix(parts[0], "data:") {
+		if mt := strings.TrimPrefix(parts[0], "data:"); mt != "" {
+			if semi := strings.Index(mt, ";"); semi != -1 {
+				mt = mt[:semi]
+			}
+			if mt != "" {
+				mimeType = mt
+			}
+		}
+	}
+
+	data, err := base64.StdEncoding.DecodeString(payload)
+	if err != nil {
+		return fmt.Errorf("decode cover: %w", err)
+	}
+
+	exts, _ := mime.ExtensionsByType(mimeType)
+	ext := ".jpg"
+	if len(exts) > 0 {
+		ext = exts[0]
+	}
+	tmpImg, err := os.CreateTemp("", "cover-*"+ext)
+	if err != nil {
+		return fmt.Errorf("temp cover: %w", err)
+	}
+	defer os.Remove(tmpImg.Name())
+	if _, err := tmpImg.Write(data); err != nil {
+		tmpImg.Close()
+		return fmt.Errorf("write cover: %w", err)
+	}
+	_ = tmpImg.Close()
+
+	// Remove existing pictures, then import.
+	_ = exec.Command("metaflac", "--remove", "--block-type=PICTURE", flacPath).Run()
+	if err := exec.Command("metaflac", "--import-picture-from="+tmpImg.Name(), flacPath).Run(); err != nil {
+		return fmt.Errorf("metaflac import failed: %w", err)
+	}
+	return nil
 }
 
 type Song struct {
@@ -250,6 +303,13 @@ func UpdateSongMetadata(c *gin.Context) {
 		return
 	}
 
+	// If we have a cover and this is a FLAC, embed it into the file using metaflac.
+	if strings.TrimSpace(req.CoverBase64) != "" && strings.EqualFold(filepath.Ext(localTemp), ".flac") {
+		if err := embedCoverInFlac(localTemp, req.CoverBase64); err != nil {
+			fmt.Println("cover embed failed:", err)
+		}
+	}
+
 	err = sftpTools.UploadAtomic(currentUser.ID, localTemp, remotePath)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Upload failed"})
@@ -259,7 +319,8 @@ func UpdateSongMetadata(c *gin.Context) {
 	var albumID int
 	err = db.QueryRow(`SELECT album_id FROM songs WHERE song_id=$1`, songID).Scan(&albumID)
 	if err != nil {
-		c.JSON(500, gin.H{"error": "Failed to get album"})
+		fmt.Printf("[tagedit] song_id=%d lookup album_id failed: %v\n", songID, err)
+		c.JSON(500, gin.H{"error": "Failed to get album", "details": err.Error()})
 		return
 	}
 
@@ -301,9 +362,21 @@ func UpdateSongMetadata(c *gin.Context) {
 		&existing.CoverBase,
 		&existing.Copyright,
 	)
-	if err != nil {
-		c.JSON(500, gin.H{"error": "Failed to load existing album"})
+	if err == sql.ErrNoRows {
+		// Album record missing; fall back to defaults instead of failing.
+		fmt.Printf("[tagedit] album_id=%d not found; defaulting album fields\n", albumID)
+		existing.Genre = "Unknown"
+		existing.Subgenres = ""
+		existing.Comment = ""
+		existing.CoverBase = ""
+		existing.Copyright = ""
+	} else if err != nil {
+		fmt.Printf("[tagedit] album_id=%d load failed: %v\n", albumID, err)
+		c.JSON(500, gin.H{"error": "Failed to load existing album", "details": err.Error()})
 		return
+	} else {
+		fmt.Printf("[tagedit] album_id=%d loaded album row: genre=%q subgenres=%q cover len=%d\n",
+			albumID, existing.Genre, existing.Subgenres, len(existing.CoverBase))
 	}
 
 	nameToStore := existing.Name
@@ -348,7 +421,16 @@ func UpdateSongMetadata(c *gin.Context) {
 		copyrightToStore = req.Copyright
 	}
 
-	_, err = db.Exec(`
+	if albumID == 0 {
+		// Create album if it didn't exist.
+		newID, err := GetOrCreateAlbum(nameToStore, artistID, fmt.Sprint(yearToStore), coverToStore, genreToStore, subToStore, commentToStore, copyrightToStore)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "Failed to create album", "details": err.Error()})
+			return
+		}
+		albumID = newID
+	} else {
+		_, err = db.Exec(`
         UPDATE albums
         SET name = $1,
             artist_id = $2,
@@ -361,9 +443,10 @@ func UpdateSongMetadata(c *gin.Context) {
         WHERE album_id = $9
     `, nameToStore, artistID, genreToStore, subToStore, yearToStore, commentToStore, coverToStore, copyrightToStore, albumID)
 
-	if err != nil {
-		c.JSON(500, gin.H{"error": "Failed to update album"})
-		return
+		if err != nil {
+			c.JSON(500, gin.H{"error": "Failed to update album", "details": err.Error()})
+			return
+		}
 	}
 
 	_, err = db.Exec(`
