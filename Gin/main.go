@@ -994,6 +994,8 @@ func main() {
 		origin := c.Request.Header.Get("Origin")
 		if origin != "" {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+		} else {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		}
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, X-CSRF-Token")
@@ -1949,12 +1951,19 @@ ORDER BY um.uploaded_at DESC
 
 		treeStr := buildTreeString(tree)
 		// fmt.Println("TREE:", treeStr)
-		allDone := true
-		for _, s := range progress {
-			if !s.Done {
-				allDone = false
-				break
+		allDone := false
+		if len(progress) > 0 {
+			allDone = true
+			for _, s := range progress {
+				if !s.Done {
+					allDone = false
+					break
+				}
 			}
+		}
+
+		if progress == nil {
+			progress = []UploadStatus{}
 		}
 		c.JSON(200, gin.H{
 			"progress": progress,
@@ -2172,15 +2181,15 @@ ORDER BY um.uploaded_at DESC
 				if err := os.WriteFile(localTempPath, s.Data, 0644); err != nil {
 					fmt.Printf("❌ Failed to save temp file for SFTP %s: %v\n", s.FileName, err)
 				} else {
-					fmt.Printf("[sftp] UploadToUserSFTP start user=%d local=%s filename=%s\n",
-						user.ID, localTempPath, s.FileName)
+					// fmt.Printf("[sftp] UploadToUserSFTP start user=%d local=%s filename=%s\n",
+					// 	user.ID, localTempPath, s.FileName)
 
 					if err := sftpTools.UploadToUserSFTP(user.ID, localTempPath, s.FileName); err != nil {
 						fmt.Printf("❌ SFTP upload failed user=%d file=%s err=%v\n",
 							user.ID, s.FileName, err)
 					} else {
-						fmt.Printf("[sftp] ✅ UploadToUserSFTP done user=%d local=%s\n",
-							user.ID, localTempPath)
+						// fmt.Printf("[sftp] ✅ UploadToUserSFTP done user=%d local=%s\n",
+						// 	user.ID, localTempPath)
 					}
 
 					if err := os.Remove(localTempPath); err != nil {

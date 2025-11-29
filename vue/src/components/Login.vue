@@ -535,6 +535,7 @@
 
 <script>
 import { getApiBase } from "../apiBase";
+const api = getApiBase();
 export default {
   name: "Auth",
   data() {
@@ -673,7 +674,7 @@ export default {
           path: this.libraryPath || `${this.loginForm.username}/library`,
         };
         console.log("submitSftpCreds");
-        const res = await fetch("http://localhost:8080/sftp/creds", {
+        const res = await fetch(`${api}/sftp/creds`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -684,18 +685,11 @@ export default {
         if (!res.ok) {
           this.error = data.details || data.error || "SFTP connection failed";
 
-          if (
-            data.error === "connection-failed" ||
-            data.error === "not-rclone" ||
-            /unreachable/i.test(this.error) ||
-            /not listening/i.test(this.error)
-          ) {
-            this.showInitServer = true;
-            this.initServerHighlight = true;
-            setTimeout(() => {
-              this.initServerHighlight = false;
-            }, 2000);
-          }
+          this.showInitServer = true;
+          this.initServerHighlight = true;
+          setTimeout(() => {
+            this.initServerHighlight = false;
+          }, 2000);
 
           setTimeout(() => (this.error = ""), 3000);
           this.loading = false;
@@ -996,7 +990,7 @@ export default {
           };
         }
 
-        const res = await fetch("http://localhost:8080/sftp/creds", {
+        const res = await fetch(`${api}/sftp/creds`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",

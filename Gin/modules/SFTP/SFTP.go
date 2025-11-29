@@ -1141,7 +1141,7 @@ func UploadToUserSFTP(userID int, localPath, filename string) error {
 		log.Printf("[sftp] copy FAILED after %d bytes: %v\n", n, err)
 		return fmt.Errorf("copy: %w", err)
 	}
-	log.Printf("[sftp] ✅ UploadToUserSFTP done user=%d remote=%s bytes=%d\n", userID, remoteFilePath, n)
+	// log.Printf("[sftp] ✅ UploadToUserSFTP done user=%d remote=%s bytes=%d\n", userID, remoteFilePath, n)
 
 	return nil
 }
