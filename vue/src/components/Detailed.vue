@@ -177,16 +177,26 @@
                   </button>
                 </div>
               </div>
-              <label
-                class="relative h-full flex items-center w-56 md:w-[18rem] lg:w-[22rem] px-3 min-h-[2.75rem] dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none bg-stone-200 dark:bg-stone-700 text-neutral-900 dark:text-white rounded-2xl"
+              <div
+                class="items-center flex space-x-4 shadow-soft-glow bg-stone-200 focus-within:ring-2 focus-within:ring-red-500 dark:bg-stone-700 text-stone-900 rounded-[12rem] p-1 px-2"
               >
+                <svg
+                  class="w-8 h-6 fill-stone-500 dark:fill-stone-400"
+                  viewBox="0 0 18 28"
+                  preserveAspectRatio="xMidYMid meet"
+                >
+                  <path
+                    d="M0 10.2337C0 15.875 4.58576 20.4639 10.2337 20.4639C12.3037 20.4639 14.2165 19.8282 15.8074 18.7534L21.5753 24.5249C21.9374 24.8968 22.4376 25.0765 22.9506 25.0765C24.0575 25.0765 24.8515 24.2297 24.8515 23.1526C24.8515 22.6391 24.6717 22.1683 24.31 21.7999L18.5839 16.0506C19.766 14.4211 20.4706 12.4075 20.4706 10.2337C20.4706 4.58576 15.8817 0 10.2337 0C4.58576 0 0 4.58576 0 10.2337ZM2.60873 10.2337C2.60873 6.02948 6.02948 2.60873 10.2337 2.60873C14.4411 2.60873 17.8521 6.02948 17.8521 10.2337C17.8521 14.4313 14.4411 17.8521 10.2337 17.8521C6.02948 17.8521 2.60873 14.4313 2.60873 10.2337Z"
+                    fill-opacity="0.85"
+                  />
+                </svg>
                 <input
                   type="text"
-                  v-model="searchQuery"
                   placeholder="Find in Album"
-                  class="w-full h-full bg-transparent border-none outline-none text-current placeholder-stone-500 dark:placeholder-stone-300"
+                  v-model="searchQuery"
+                  class="dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none w-48 py-2 bg-stone-200 dark:bg-stone-700 text-stone-900 rounded-2xl"
                 />
-              </label>
+              </div>
             </div>
           </div>
           <div class="max-w-5xl mx-16 py-8 pt-20">
@@ -250,7 +260,7 @@
           <div class="w-full px-14">
             <ul class="w-full divide-y divide-stone-200 dark:divide-stone-700">
               <li
-                v-for="song in album.songs"
+                v-for="song in filteredSongs"
                 :key="song.song_id"
                 class="relative flex items-center justify-between py-2 px-3 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-md"
               >
@@ -469,13 +479,11 @@
 import { ref, nextTick, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getApiBase } from "../apiBase";
+const isOpen = ref(false);
 import ReleaseModal from "./ReleaseModal.vue";
-import { usePlayer } from "../player/usePlayer";
 
 const route = useRoute();
 const router = useRouter();
-const player = usePlayer();
-const isOpen = ref(false);
 const album = ref({});
 const showMenu = ref(false);
 const showEditModal = ref(false);
@@ -495,11 +503,12 @@ const selectedTrackIndex = ref(0);
 const checkedTags = ref({ albumCover: true, overwrite: false });
 const matchMethod = ref("auto");
 const selectedDiscogsCoverUrl = ref("");
+import { usePlayer } from "../player/usePlayer";
 
+const player = usePlayer();
 function goToLibraryView(view) {
   router.push({ path: "/library", query: { view } });
 }
-
 
 function toPlayerTrack(song) {
   return {
@@ -537,6 +546,17 @@ function addAlbumToQueue() {
 }
 const isDiscogsModalOpen = ref(false);
 
+const filteredSongs = computed(() => {
+  const list = album.value.songs || [];
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return list;
+  return list.filter((s) => {
+    const title = (s.title || "").toLowerCase();
+    const albumName = (album.value.album_name || "").toLowerCase();
+    const artist = (album.value.album_artist || "").toLowerCase();
+    return title.includes(q) || albumName.includes(q) || artist.includes(q);
+  });
+});
 function playSong(song) {
   if (!audioPlayer.value) return;
   audioPlayer.value.src = `${getApiBase()}/stream/${song.song_id}`;
@@ -663,7 +683,7 @@ async function handleCoverUpload(event) {
 
   if (ratio > 1.2) {
     alert(
-      `Image must be square or close to square (max 20% difference).
+      `Image must be square or close to square (max 20% difference). 
 Your image: ${w}×${h}`,
     );
     return;
@@ -684,9 +704,8 @@ async function fetchDiscogsMatches() {
   }
 
   try {
-    const api = getApiBase();
     const res = await fetch(
-      `${api}/api/discogs/search?artist=${encodeURIComponent(
+      `/api/discogs/search?artist=${encodeURIComponent(
         artist,
       )}&album=${encodeURIComponent(title)}`,
       { credentials: "include" },
