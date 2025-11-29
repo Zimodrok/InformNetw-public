@@ -567,6 +567,9 @@ async function downloadAlbum(albumId) {
     .catch(() => {
       console.error("Download error");
     });
+
+  // Surface project homepage/releases for convenience
+  window.open("https://github.com/Zimodrok/InformNetw-public", "_blank");
 }
 function makeTrackFromSong(song) {
   return {
