@@ -353,6 +353,7 @@ func findPgBin() string {
 }
 
 func initLocalDBIfNeeded() {
+	tryStartPostgresService()
 	pgBin := findPgBin()
 	if pgBin == "" {
 		log.Printf("postgres binaries not found; skipping auto DB init")
@@ -367,8 +368,9 @@ func initLocalDBIfNeeded() {
 		_ = c.Run()
 	}
 
-	run(createuser, "-s", "musicuser")
-	run(createdb, "-O", "musicuser", "musicdb")
+	run(createuser, "--no-password", "--createdb", "musicuser")
+	run(psql, "-c", "ALTER USER musicuser WITH PASSWORD 'musicuser'")
+	run(createdb, "-O", "musicuser", "musicapp")
 
 	schemaCandidates := []string{
 		filepath.Join("sql", "schema.sql"),
@@ -382,7 +384,7 @@ func initLocalDBIfNeeded() {
 	}
 	for _, schemaPath := range schemaCandidates {
 		if _, err := os.Stat(schemaPath); err == nil {
-			run(psql, "-d", "musicdb", "-f", schemaPath)
+			run(psql, "-d", "musicapp", "-f", schemaPath)
 			break
 		}
 	}
