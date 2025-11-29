@@ -177,26 +177,44 @@
                   </button>
                 </div>
               </div>
-              <div
-                class="items-center flex space-x-4 shadow-soft-glow bg-stone-200 focus-within:ring-2 focus-within:ring-red-500 dark:bg-stone-700 text-stone-900 rounded-[12rem] p-1 px-2"
+              <label
+                class="relative h-full flex items-center whitespace-nowrap overflow-hidden w-56 md:w-[18rem] lg:w-[22rem] px-2 dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none bg-stone-200 dark:bg-stone-700 text-transparent caret-white rounded-2xl"
               >
-                <svg
-                  class="w-8 h-6 fill-stone-500 dark:fill-stone-400"
-                  viewBox="0 0 18 28"
-                  preserveAspectRatio="xMidYMid meet"
+                <div
+                  class="absolute inset-0 flex items-center px-3 space-x-2 pointer-events-none text-white/80 overflow-hidden"
                 >
-                  <path
-                    d="M0 10.2337C0 15.875 4.58576 20.4639 10.2337 20.4639C12.3037 20.4639 14.2165 19.8282 15.8074 18.7534L21.5753 24.5249C21.9374 24.8968 22.4376 25.0765 22.9506 25.0765C24.0575 25.0765 24.8515 24.2297 24.8515 23.1526C24.8515 22.6391 24.6717 22.1683 24.31 21.7999L18.5839 16.0506C19.766 14.4211 20.4706 12.4075 20.4706 10.2337C20.4706 4.58576 15.8817 0 10.2337 0C4.58576 0 0 4.58576 0 10.2337ZM2.60873 10.2337C2.60873 6.02948 6.02948 2.60873 10.2337 2.60873C14.4411 2.60873 17.8521 6.02948 17.8521 10.2337C17.8521 14.4313 14.4411 17.8521 10.2337 17.8521C6.02948 17.8521 2.60873 14.4313 2.60873 10.2337Z"
-                    fill-opacity="0.85"
-                  />
-                </svg>
+                  <template v-if="!displayTokens.length">
+                    <span class="text-stone-500 dark:text-stone-300"
+                      >Find in Album</span
+                    >
+                  </template>
+                  <template v-else>
+                    <span
+                      v-for="(t, idx) in displayTokens"
+                      :key="idx"
+                      class="flex items-center space-x-2 text-base"
+                    >
+                      <template v-if="t.isTag && t.value">
+                        <span
+                          class="rounded-2xl px-2 py-0.5 text-sm font-semibold"
+                          :class="t.class"
+                        >
+                          {{ t.label }}
+                        </span>
+                        <span class="text-white">{{ t.value }}</span>
+                      </template>
+                      <template v-else>
+                        <span :class="t.class">{{ t.value || t.raw }}</span>
+                      </template>
+                    </span>
+                  </template>
+                </div>
                 <input
                   type="text"
-                  placeholder="Find in Albums"
                   v-model="searchQuery"
-                  class="dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none w-48 py-2 bg-stone-200 dark:bg-stone-700 text-stone-900 rounded-2xl"
+                  class="absolute inset-0 w-full h-full bg-transparent border-none outline-none text-transparent caret-white"
                 />
-              </div>
+              </label>
             </div>
           </div>
           <div class="max-w-5xl mx-16 py-8 pt-20 overflow-y-scroll">
@@ -485,6 +503,7 @@ import ReleaseModal from "./ReleaseModal.vue";
 const route = useRoute();
 const router = useRouter();
 const album = ref({});
+const searchQuery = ref("");
 const showMenu = ref(false);
 const showEditModal = ref(false);
 const metadata = ref({ title: "", artist: "" });
@@ -509,6 +528,62 @@ const player = usePlayer();
 function goToLibraryView(view) {
   router.push({ path: "/library", query: { view } });
 }
+function parseSearch(query) {
+  const tags = {
+    artist: [],
+    album: [],
+    genre: [],
+    song: [],
+    text: [],
+  };
+  if (!query) return tags;
+  query
+    .split(/\s+/)
+    .filter(Boolean)
+    .forEach((token) => {
+      const lower = token.toLowerCase();
+      if (lower.startsWith("artist:")) tags.artist.push(lower.slice(7));
+      else if (lower.startsWith("album:")) tags.album.push(lower.slice(6));
+      else if (lower.startsWith("genre:")) tags.genre.push(lower.slice(6));
+      else if (lower.startsWith("song:")) tags.song.push(lower.slice(5));
+      else tags.text.push(lower);
+    });
+  return tags;
+}
+
+const filteredAlbums = computed(() => {
+  if (!["Albums", "Recently Added"].includes(activeView.value))
+    return albums.value;
+
+  const tags = parseSearch(searchQuery.value);
+  const hasTags =
+    tags.artist.length ||
+    tags.album.length ||
+    tags.genre.length ||
+    tags.text.length;
+  if (!hasTags) return albums.value;
+
+  const matches = (album) => {
+    const name = (album.name || "").toLowerCase();
+    const artist = (album.artist || "").toLowerCase();
+    const genre = (album.genre || "").toLowerCase();
+    if (tags.artist.length && !tags.artist.every((t) => artist.includes(t)))
+      return false;
+    if (tags.album.length && !tags.album.every((t) => name.includes(t)))
+      return false;
+    if (tags.genre.length && !tags.genre.every((t) => genre.includes(t)))
+      return false;
+    if (
+      tags.text.length &&
+      !tags.text.every(
+        (t) => name.includes(t) || artist.includes(t) || genre.includes(t),
+      )
+    )
+      return false;
+    return true;
+  };
+  return albums.value.filter(matches);
+});
 
 function toPlayerTrack(song) {
   return {
@@ -545,6 +620,33 @@ function addAlbumToQueue() {
   player.enqueueAlbum(tracks);
 }
 const isDiscogsModalOpen = ref(false);
+
+const displayTokens = computed(() => {
+  const tokens = searchQuery.value.split(/\s+/).filter(Boolean);
+  return tokens.map((raw) => {
+    const m = raw.match(/^(album|artist|genre|song|text):(.*)$/i);
+    if (!m) {
+      return { raw, value: raw, isTag: false, class: "text-white" };
+    }
+    const kind = m[1].toLowerCase();
+    const val = (m[2] || "").trim();
+    const palette = {
+      album: "bg-red-800/60 text-red-100 border border-red-500/60",
+      artist: "bg-purple-800/60 text-purple-100 border border-purple-500/60",
+      genre: "bg-green-800/60 text-green-100 border border-green-500/60",
+      song: "bg-blue-800/60 text-blue-100 border border-blue-500/60",
+      text: "bg-amber-800/60 text-amber-100 border border-amber-500/60",
+    };
+    const cls = palette[kind] || "bg-stone-700 text-stone-100 border border-stone-500/60";
+    return {
+      raw,
+      label: kind,
+      value: val,
+      isTag: val.length > 0,
+      class: cls,
+    };
+  });
+});
 function playSong(song) {
   if (!audioPlayer.value) return;
   audioPlayer.value.src = `${getApiBase()}/stream/${song.song_id}`;
@@ -771,13 +873,10 @@ function formatDateTime(ts) {
 async function deleteSong(song) {
   if (!confirm("Delete this song?")) return;
   try {
-    const res = await fetch(
-      `${getApiBase()}/song/delete/${song.song_id}`,
-      {
-        method: "POST",
-        credentials: "include",
-      },
-    );
+    const res = await fetch(`${getApiBase()}/song/delete/${song.song_id}`, {
+      method: "POST",
+      credentials: "include",
+    });
     if (!res.ok) throw new Error("Failed to delete song");
     album.value.songs = album.value.songs.filter(
       (s) => s.song_id !== song.song_id,
