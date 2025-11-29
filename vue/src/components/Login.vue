@@ -362,6 +362,14 @@
               placeholder="Password"
               class="input-field bg-white dark:bg-neutral-700 dark:text-neutral-100 text-neutral-900"
             />
+            <label class="flex items-center space-x-2 text-sm text-neutral-600 dark:text-neutral-300">
+              <input
+                type="checkbox"
+                v-model="loginForm.rememberMe"
+                class="w-4 h-4"
+              />
+              <span>Remember me (30 days)</span>
+            </label>
             <button
               type="submit"
               class="w-full rounded-lg bg-neutral-900 dark:bg-neutral-700 px-6 py-3 font-medium text-neutral-100 hover:bg-neutral-700 dark:hover:bg-neutral-600"
@@ -580,7 +588,7 @@ export default {
         name: "",
         email: "",
       },
-      loginForm: { username: "", password: "" },
+      loginForm: { username: "", password: "", rememberMe: true },
     };
   },
 
@@ -925,7 +933,11 @@ export default {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ ...this.loginForm, password: hashed }),
+          body: JSON.stringify({
+            username: this.loginForm.username,
+            password: hashed,
+            rememberMe: this.loginForm.rememberMe,
+          }),
         });
 
         if (!res.ok) {

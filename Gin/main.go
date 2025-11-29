@@ -1395,8 +1395,9 @@ func main() {
 
 	r.POST("/login", func(c *gin.Context) {
 		var payload struct {
-			Username string `json:"username"`
-			Password string `json:"password"`
+			Username   string `json:"username"`
+			Password   string `json:"password"`
+			RememberMe bool   `json:"rememberMe"`
 		}
 
 		if err := c.BindJSON(&payload); err != nil {
@@ -1423,7 +1424,11 @@ func main() {
 			sessionID := generateRandomSessionID()
 			sftpTools.Sessions[sessionID] = guestUser.ID
 
-			c.SetCookie("session_id", sessionID, 3600*24, "/", "", false, true)
+			maxAge := 3600 * 24
+			if payload.RememberMe {
+				maxAge = 3600 * 24 * 30
+			}
+			c.SetCookie("session_id", sessionID, maxAge, "/", "", false, true)
 
 			c.JSON(200, gin.H{
 				"id":       guestUser.ID,
@@ -1443,7 +1448,11 @@ func main() {
 		sessionID := generateRandomSessionID()
 		sftpTools.Sessions[sessionID] = user.ID
 
-		c.SetCookie("session_id", sessionID, 3600*24, "/", "", false, true)
+		maxAge := 3600 * 24
+		if payload.RememberMe {
+			maxAge = 3600 * 24 * 30
+		}
+		c.SetCookie("session_id", sessionID, maxAge, "/", "", false, true)
 
 		c.JSON(200, gin.H{
 			"id":       user.ID,
