@@ -317,10 +317,20 @@
                   <span
                     v-for="(t, idx) in displayTokens"
                     :key="idx"
-                    :class="t.class"
-                    class="text-base"
+                    class="flex items-center space-x-2 text-base"
                   >
-                    {{ t.text }}
+                    <template v-if="t.isTag && t.value">
+                      <span
+                        class="rounded-2xl px-2 py-0.5 text-sm font-semibold"
+                        :class="t.class"
+                      >
+                        {{ t.label }}
+                      </span>
+                      <span class="text-white">{{ t.value }}</span>
+                    </template>
+                    <template v-else>
+                      <span :class="t.class">{{ t.value || t.raw }}</span>
+                    </template>
                   </span>
                 </template>
               </div>
@@ -1349,20 +1359,28 @@ const filteredSongs = computed(() => {
 
 const displayTokens = computed(() => {
   const tokens = searchQuery.value.split(/\s+/).filter(Boolean);
-  return tokens.map((t) => {
-    const m = t.match(/^(album|artist|genre|song|text):(.+)$/i);
-    if (!m || !m[2]) {
-      return { text: t, class: "text-transparent" };
+  return tokens.map((raw) => {
+    const m = raw.match(/^(album|artist|genre|song|text):(.*)$/i);
+    if (!m) {
+      return { raw, value: raw, isTag: false, class: "text-white" };
     }
     const kind = m[1].toLowerCase();
+    const val = (m[2] || "").trim();
     const palette = {
-      album: "text-red-400",
-      artist: "text-purple-300",
-      genre: "text-green-300",
-      song: "text-blue-300",
-      text: "text-amber-300",
+      album: "bg-red-800/60 text-red-100 border border-red-500/60",
+      artist: "bg-purple-800/60 text-purple-100 border border-purple-500/60",
+      genre: "bg-green-800/60 text-green-100 border border-green-500/60",
+      song: "bg-blue-800/60 text-blue-100 border border-blue-500/60",
+      text: "bg-amber-800/60 text-amber-100 border border-amber-500/60",
     };
-    return { text: t, class: palette[kind] || "text-stone-200" };
+    const cls = palette[kind] || "bg-stone-700 text-stone-100 border border-stone-500/60";
+    return {
+      raw,
+      label: kind,
+      value: val,
+      isTag: val.length > 0,
+      class: cls,
+    };
   });
 });
 const sortedSongs = computed(() => {
