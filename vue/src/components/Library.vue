@@ -262,7 +262,7 @@
         <!-- Main content -->
         <div class="flex-1 flex flex-col relative h-screen">
           <div
-            class="relative md:absolute flex items-center justify-between h-[4rem] max-w-screen top-0 left-0 right-0 z-50 px-6 py-4 bg-[linear-gradient(to_bottom,rgba(var(--bg),1)_0%,rgba(var(--bg),1)_40%,rgba(var(--bg),0.9)_55%,rgba(var(--bg),0.93)_70%,rgba(var(--bg),1)_100%)] backdrop-blur-sm dark:[--bg:0,0,0] [--bg:241,241,241]"
+            class="relative md:absolute flex items-center justify-between h-[4rem] max-w-screen top-0 left-0 right-0 z-[60] px-6 py-4 bg-[linear-gradient(to_bottom,rgba(var(--bg),1)_0%,rgba(var(--bg),1)_40%,rgba(var(--bg),0.9)_55%,rgba(var(--bg),0.93)_70%,rgba(var(--bg),1)_100%)] backdrop-blur-sm dark:[--bg:0,0,0] [--bg:241,241,241]"
           >
             <p
               v-if="activeView === 'Recently Added'"
@@ -313,6 +313,16 @@
                 v-model="searchQuery"
                 class="dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none w-48 py-2 bg-stone-200 dark:bg-stone-700 text-stone-900 rounded-2xl"
               />
+            </div>
+            <div v-if="tagBadges.length" class="flex flex-wrap gap-2 mt-2">
+              <span
+                v-for="(chip, idx) in tagBadges"
+                :key="idx"
+                class="px-2 py-1 text-xs rounded-full border"
+                :class="chip.class"
+              >
+                {{ chip.label }}
+              </span>
             </div>
           </div>
 
@@ -1329,6 +1339,25 @@ const filteredSongs = computed(() => {
   });
 
   return results;
+});
+
+const tagBadges = computed(() => {
+  const tags = parseSearch(searchQuery.value);
+  const chips = [];
+  const pushChips = (arr, kind, cls) => {
+    arr.forEach((t) =>
+      chips.push({
+        label: `${kind}:${t}`,
+        class: cls,
+      }),
+    );
+  };
+  pushChips(tags.album, "album", "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200 border-red-300 dark:border-red-700");
+  pushChips(tags.artist, "artist", "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200 border-purple-300 dark:border-purple-700");
+  pushChips(tags.genre, "genre", "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200 border-green-300 dark:border-green-700");
+  pushChips(tags.song, "song", "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200 border-blue-300 dark:border-blue-700");
+  pushChips(tags.text, "text", "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-200 border-stone-300 dark:border-stone-700");
+  return chips;
 });
 const sortedSongs = computed(() => {
   const base = filteredSongs.value;
