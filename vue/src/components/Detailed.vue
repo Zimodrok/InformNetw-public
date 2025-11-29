@@ -476,7 +476,7 @@
 </template>
 
 <script setup lang="js">
-import { ref, nextTick, onMounted } from "vue";
+import { ref, nextTick, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getApiBase } from "../apiBase";
 const isOpen = ref(false);
@@ -485,6 +485,7 @@ import ReleaseModal from "./ReleaseModal.vue";
 const route = useRoute();
 const router = useRouter();
 const album = ref({});
+const searchQuery = ref("");
 const showMenu = ref(false);
 const showEditModal = ref(false);
 const metadata = ref({ title: "", artist: "" });
