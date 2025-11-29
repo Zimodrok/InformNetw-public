@@ -257,17 +257,20 @@ func UpdateSongMetadata(c *gin.Context) {
 		return
 	}
 
-	_ = os.MkdirAll("./temp_metadata_edit", 0755)
-	localTemp := fmt.Sprintf("./temp_metadata_edit/%d_edit%s", songID, path.Ext(remotePath))
+	tempDir := filepath.Join(os.TempDir(), "musicapp_metadata")
+	_ = os.MkdirAll(tempDir, 0755)
+	localTemp := filepath.Join(tempDir, fmt.Sprintf("u%d_%d_edit%s", currentUser.ID, songID, path.Ext(remotePath)))
 
 	err = sftpTools.DownloadFromSFTP(currentUser.ID, remotePath, localTemp)
 	if err != nil {
-		c.JSON(500, gin.H{"error": "Download failed"})
+		fmt.Printf("[tagedit] download failed user=%d remote=%s err=%v\n", currentUser.ID, remotePath, err)
+		c.JSON(500, gin.H{"error": "Download failed", "details": err.Error()})
 		return
 	}
 
 	info, err := os.Stat(localTemp)
 	if err != nil || info.Size() == 0 {
+		fmt.Printf("[tagedit] temp file invalid path=%s err=%v size=%d\n", localTemp, err, info.Size())
 		c.JSON(500, gin.H{"error": "Local file missing or empty"})
 		return
 	}
