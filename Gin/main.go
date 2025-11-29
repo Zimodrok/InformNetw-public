@@ -394,6 +394,18 @@ func initLocalDBIfNeeded() {
 	run(psql, "-d", "musicapp", "-c", "ALTER TABLE users ADD COLUMN IF NOT EXISTS server_ip text;")
 }
 
+func ensureSchema(d *sql.DB) {
+	stmts := []string{
+		`ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS library_path text;`,
+		`ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS server_ip text;`,
+	}
+	for _, q := range stmts {
+		if _, err := d.Exec(q); err != nil {
+			log.Printf("schema ensure failed for %q: %v", q, err)
+		}
+	}
+}
+
 func tryStartPostgresService() {
 	services := []string{"postgresql@14", "postgresql"}
 	for _, svc := range services {
@@ -984,6 +996,7 @@ func main() {
 		tagedit.SetDB(db)
 		sftpTools.SetDB(db)
 		sftpTools.SetDefaultPort(portsConfig.SFTPPort)
+		ensureSchema(db)
 	}
 
 	r := gin.Default()
