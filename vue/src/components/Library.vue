@@ -295,7 +295,7 @@
               Genres
             </p>
             <div
-              class="items-center flex space-x-4 bg-stone-200 focus-within:ring-2 focus-within:ring-red-500 dark:bg-stone-700 text-stone-900 rounded-[12rem] p-1 px-2"
+              class="items-center w-30 flex space-x-4 bg-stone-200 focus-within:ring-2 focus-within:ring-red-500 dark:bg-stone-700 text-stone-900 rounded-[12rem] p-1 px-2"
             >
               <svg
                 class="w-8 h-6 fill-stone-500 dark:fill-stone-400"
@@ -308,15 +308,12 @@
                 />
               </svg>
               <label
-                class="relative h-full flex-1 whitespace-nowrap overflow-hidden w-64 md:w-[24rem] lg:w-[28rem] dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none bg-stone-200 dark:bg-stone-700 text-transparent caret-white rounded-2xl"
+                class="relative h-full flex items-center whitespace-nowrap overflow-hidden w-56 md:w-[18rem] lg:w-[22rem] px-2 dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none bg-stone-200 dark:bg-stone-700 text-transparent caret-white rounded-2xl"
               >
-                <div
-                  class="absolute inset-0 flex items-center px-4 space-x-2 pointer-events-none text-white/80 overflow-hidden"
-                ></div>
                 <input
                   type="text"
                   v-model="searchQuery"
-                  class="absolute inset-0 w-full h-full bg-transparent border-none outline-none text-transparent caret-white"
+                  class="absolute inset-0 w-full h-4 bg-transparent border-none outline-none text-transparent caret-white"
                 />
                 <template v-if="!displayTokens.length">
                   <span class="text-stone-500 dark:text-stone-300"
@@ -327,16 +324,18 @@
                   <span
                     v-for="(t, idx) in displayTokens"
                     :key="idx"
-                    class="flex items-center space-x-2 text-base"
+                    class="flex items-center text-base"
                   >
                     <template v-if="t.isTag && t.value">
                       <span
-                        class="rounded-2xl px-2 py-0.5 text-sm font-semibold"
+                        class="rounded-2xl pl-2 pr-1 text-sm font-semibold -translate-x-2"
                         :class="t.class"
                       >
                         {{ t.label }}
                       </span>
-                      <span class="text-white">{{ t.value }}</span>
+                      <span class="text-white -translate-x-2">{{
+                        t.value
+                      }}</span>
                     </template>
                     <template v-else>
                       <span :class="t.class">{{ t.value || t.raw }}</span>
