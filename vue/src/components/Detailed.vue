@@ -178,41 +178,13 @@
                 </div>
               </div>
               <label
-                class="relative h-full flex items-center whitespace-nowrap overflow-hidden w-56 md:w-[18rem] lg:w-[22rem] px-2 min-h-[2.75rem] dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none bg-stone-200 dark:bg-stone-700 text-transparent caret-white rounded-2xl"
+                class="relative h-full flex items-center w-56 md:w-[18rem] lg:w-[22rem] px-3 min-h-[2.75rem] dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none bg-stone-200 dark:bg-stone-700 text-neutral-900 dark:text-white rounded-2xl"
               >
-                <div
-                  class="absolute inset-0 flex items-center px-3 space-x-2 pointer-events-none text-white/80 overflow-hidden z-10"
-                >
-                  <template v-if="!displayTokens.length">
-                    <span class="text-stone-500 dark:text-stone-300"
-                      >Find in Album</span
-                    >
-                  </template>
-                  <template v-else>
-                    <span
-                      v-for="(t, idx) in displayTokens"
-                      :key="idx"
-                      class="flex items-center space-x-2 text-base"
-                    >
-                      <template v-if="t.isTag && t.value">
-                        <span
-                          class="rounded-2xl px-2 py-0.5 text-sm font-semibold"
-                          :class="t.class"
-                        >
-                          {{ t.label }}
-                        </span>
-                        <span class="text-white">{{ t.value }}</span>
-                      </template>
-                      <template v-else>
-                        <span :class="t.class">{{ t.value || t.raw }}</span>
-                      </template>
-                    </span>
-                  </template>
-                </div>
                 <input
                   type="text"
                   v-model="searchQuery"
-                  class="absolute inset-0 w-full h-full bg-transparent border-none outline-none text-transparent caret-white z-0"
+                  placeholder="Find in Album"
+                  class="w-full h-full bg-transparent border-none outline-none text-current placeholder-stone-500 dark:placeholder-stone-300"
                 />
               </label>
             </div>
@@ -494,7 +466,7 @@
 </template>
 
 <script setup lang="js">
-import { ref, nextTick, onMounted, computed } from "vue";
+import { ref, nextTick, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getApiBase } from "../apiBase";
 import ReleaseModal from "./ReleaseModal.vue";
@@ -505,7 +477,6 @@ const router = useRouter();
 const player = usePlayer();
 const isOpen = ref(false);
 const album = ref({});
-const searchQuery = ref("");
 const showMenu = ref(false);
 const showEditModal = ref(false);
 const metadata = ref({ title: "", artist: "" });
@@ -529,49 +500,6 @@ function goToLibraryView(view) {
   router.push({ path: "/library", query: { view } });
 }
 
-// Tag helpers
-function parseSearch(query) {
-  const tags = { artist: [], album: [], genre: [], song: [], text: [] };
-  if (!query) return tags;
-  query
-    .split(/\s+/)
-    .filter(Boolean)
-    .forEach((token) => {
-      const lower = token.toLowerCase();
-      if (lower.startsWith("artist:")) tags.artist.push(lower.slice(7));
-      else if (lower.startsWith("album:")) tags.album.push(lower.slice(6));
-      else if (lower.startsWith("genre:")) tags.genre.push(lower.slice(6));
-      else if (lower.startsWith("song:")) tags.song.push(lower.slice(5));
-      else tags.text.push(lower);
-    });
-  return tags;
-}
-
-const displayTokens = computed(() => {
-  const tokens = searchQuery.value.split(/\s+/).filter(Boolean);
-  return tokens.map((raw) => {
-    const m = raw.match(/^(album|artist|genre|song|text):(.*)$/i);
-    if (!m) return { raw, value: raw, isTag: false, class: "text-white" };
-    const kind = m[1].toLowerCase();
-    const val = (m[2] || "").trim();
-    const palette = {
-      album: "bg-red-800/60 text-red-100 border border-red-500/60",
-      artist: "bg-purple-800/60 text-purple-100 border border-purple-500/60",
-      genre: "bg-green-800/60 text-green-100 border border-green-500/60",
-      song: "bg-blue-800/60 text-blue-100 border border-blue-500/60",
-      text: "bg-amber-800/60 text-amber-100 border border-amber-500/60",
-    };
-    const cls =
-      palette[kind] || "bg-stone-700 text-stone-100 border border-stone-500/60";
-    return {
-      raw,
-      label: kind,
-      value: val,
-      isTag: val.length > 0,
-      class: cls,
-    };
-  });
-});
 
 function toPlayerTrack(song) {
   return {
